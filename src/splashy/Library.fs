@@ -1,5 +1,7 @@
 namespace splashy
 
+open Vector
+
 /// Documentation for my library
 ///
 /// ## Example
@@ -7,8 +9,8 @@ namespace splashy
 ///     let h = Library.hello 1
 ///     printfn "%d" h
 ///
-module Library = 
-  
+module Library =
+
   /// Returns 42
   ///
   /// ## Parameters
