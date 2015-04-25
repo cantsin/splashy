@@ -10,6 +10,7 @@ open OpenTK.Graphics.OpenGL
 open OpenTK.Input
 
 open Vector
+open Quad
 
 type Game() =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
@@ -32,8 +33,6 @@ type Game() =
     }
     """
 
-  let points = [| -0.5f; 0.0f; 0.0f; 1.0f; 0.5f; 0.0f; 0.0f; 1.0f; 0.0f; 0.5f; 0.0f; 1.0f |]
-
   let mutable vertexShader = 0
   let mutable fragmentShader = 0
   let mutable program = 0
@@ -43,6 +42,12 @@ type Game() =
   do base.VSync <- VSyncMode.On
 
   override o.OnLoad e =
+    let quad: Quad = { x1 = Vector3d(0.5, 0.0, 0.0);
+                       x2 = Vector3d(0.5, 0.5, 0.0);
+                       x3 = Vector3d(0.0, 0.5, 0.0);
+                       x4 = Vector3d(0.0, 0.0, 0.0); }
+    assert(coplanarity quad)
+
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
     GL.Enable(EnableCap.DepthTest)
     vertexShader <-
@@ -71,13 +76,13 @@ type Game() =
       array
 
     // Transfer the vertices from CPU to GPU.
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(3 * 4 * sizeof<float32>), points, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(3 * 4 * sizeof<double>), raw quad, BufferUsageHint.StaticDraw)
     GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
     GL.UseProgram(program)
 
     let vertexPosition = GL.GetAttribLocation(program, "position")
     GL.BindBuffer(BufferTarget.ArrayBuffer, verticesVbo)
-    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Float, false, 0, 0)
+    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, 0, 0)
     GL.EnableVertexAttribArray(vertexPosition)
 
     base.OnLoad e
@@ -113,7 +118,7 @@ type Game() =
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
+    GL.DrawArrays(PrimitiveType.Quads, 0, 4);
 
     base.SwapBuffers()
     base.OnRenderFrame e
