@@ -12,72 +12,112 @@ open OpenTK.Input
 open Vector
 
 type Game() =
-    /// <summary>Creates a 800x600 window with the specified title.</summary>
-    inherit GameWindow(800, 600, GraphicsMode.Default, "F# OpenTK Sample")
+  inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
 
-     do base.VSync <- VSyncMode.On
+  let vertexSource = """
+    #version 330
+    layout (location = 0) in vec4 position;
+    void main(void)
+    {
+      gl_Position = position;
+    }
+    """
 
-     /// <summary>Load resources here.</summary>
-     /// <param name="e">Not used.</param>
-     override o.OnLoad e =
-       base.OnLoad(e)
-       GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
-       GL.Enable(EnableCap.DepthTest)
+  let fragmentSource = """
+    #version 330
+    out vec4 outputColor;
+    void main(void)
+    {
+      outputColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+    """
 
-     /// <summary>
-     /// Called when your window is resized. Set your viewport here. It is also
-     /// a good place to set up your projection matrix (which probably changes
-     /// along when the aspect ratio of your window).
-     /// </summary>
-     /// <param name="e">Not used.</param>
-     override o.OnResize e =
-         base.OnResize e
-         GL.Viewport(base.ClientRectangle.X, base.ClientRectangle.Y, base.ClientRectangle.Width, base.ClientRectangle.Height)
-         let mutable projection = Matrix4.CreatePerspectiveFieldOfView(float32 (Math.PI / 4.), float32 base.Width / float32 base.Height, 1.f, 64.f)
-         GL.MatrixMode(MatrixMode.Projection)
-         GL.LoadMatrix(&projection)
+  let points = [| -0.5f; 0.0f; 0.0f; 1.0f; 0.5f; 0.0f; 0.0f; 1.0f; 0.0f; 0.5f; 0.0f; 1.0f |]
 
+  let mutable vertexShader = 0
+  let mutable fragmentShader = 0
+  let mutable program = 0
+  let mutable verticesVbo = 0
+  let mutable vao = 0
 
-     /// <summary>
-     /// Called when it is time to setup the next frame. Add you game logic here.
-     /// </summary>
-     /// <param name="e">Contains timing information for framerate independent logic.</param>
-     override o.OnUpdateFrame e =
-       base.OnUpdateFrame e
-       if base.Keyboard.[Key.Escape] then base.Close()
+  do base.VSync <- VSyncMode.On
 
-     /// <summary>
-     /// Called when it is time to render the next frame. Add your rendering code here.
-     /// </summary>
-     /// <param name="e">Contains timing information.</param>
-     override o.OnRenderFrame(e) =
-       base.OnRenderFrame e
-       GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
-       let mutable modelview = Matrix4.LookAt(Vector3.Zero, Vector3.UnitZ, Vector3.UnitY)
-       GL.MatrixMode(MatrixMode.Modelview)
-       GL.LoadMatrix(&modelview)
+  override o.OnLoad e =
+    GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
+    GL.Enable(EnableCap.DepthTest)
+    vertexShader <-
+      let shader = GL.CreateShader(ShaderType.VertexShader)
+      GL.ShaderSource(shader, vertexSource)
+      GL.CompileShader(shader)
+      shader
+    fragmentShader <-
+      let shader = GL.CreateShader(ShaderType.FragmentShader)
+      GL.ShaderSource(shader, fragmentSource)
+      GL.CompileShader(shader)
+      shader
+    program <-
+      let program = GL.CreateProgram()
+      GL.AttachShader(program, vertexShader)
+      GL.AttachShader(program, fragmentShader)
+      GL.LinkProgram(program)
+      program
+    verticesVbo <-
+      let buffer = GL.GenBuffer()
+      GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
+      buffer
+    vao <-
+      let array = GL.GenVertexArray()
+      GL.BindVertexArray(array)
+      array
 
-       GL.Begin(BeginMode.Triangles)
-       GL.Color3(1.f, 1.f, 0.f); GL.Vertex3(-1.f, -1.f, 4.f)
-       GL.Color3(1.f, 0.f, 0.f); GL.Vertex3(1.f, -1.f, 4.f)
-       GL.Color3(0.2f, 0.9f, 1.f); GL.Vertex3(0.f, 1.f, 4.f)
-       GL.End()
+    // Transfer the vertices from CPU to GPU.
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(3 * 4 * sizeof<float32>), points, BufferUsageHint.StaticDraw)
+    GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
+    GL.UseProgram(program)
 
-       base.SwapBuffers()
+    let vertexPosition = GL.GetAttribLocation(program, "position")
+    GL.BindBuffer(BufferTarget.ArrayBuffer, verticesVbo)
+    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Float, false, 0, 0)
+    GL.EnableVertexAttribArray(vertexPosition)
 
-/// Documentation for my library
-///
-/// ## Example
-///
-///     let h = Library.hello 1
-///     printfn "%d" h
-///
+    base.OnLoad e
+
+  override this.OnUnload(e) =
+    GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
+    GL.DeleteBuffer(verticesVbo)
+    GL.DeleteVertexArray(vao)
+
+    GL.UseProgram(0)
+    GL.DeleteProgram(program)
+    GL.DeleteShader(vertexShader)
+    GL.DeleteShader(fragmentShader)
+    base.OnUnload e
+
+  override o.OnResize e =
+    base.OnResize e
+    GL.Viewport(base.ClientRectangle.X,
+                base.ClientRectangle.Y,
+                base.ClientRectangle.Width,
+                base.ClientRectangle.Height)
+    let mutable projection = Matrix4.CreatePerspectiveFieldOfView(float32 (Math.PI / 4.),
+                                                                  float32 base.Width / float32 base.Height,
+                                                                  1.f,
+                                                                  64.f)
+    GL.MatrixMode(MatrixMode.Projection)
+    GL.LoadMatrix(&projection)
+
+  override o.OnUpdateFrame e =
+    base.OnUpdateFrame e
+    if base.Keyboard.[Key.Escape] then base.Close()
+
+  override o.OnRenderFrame(e) =
+    GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
+
+    GL.DrawArrays(BeginMode.Triangles, 0, 3);
+
+    base.SwapBuffers()
+    base.OnRenderFrame e
+
 module Library =
-
-  /// Returns 42
-  ///
-  /// ## Parameters
-  ///  - `num` - whatever
-  let hello num = 42
   let game = new Game()
   do game.Run(30.)
