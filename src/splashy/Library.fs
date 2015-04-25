@@ -113,7 +113,7 @@ type Game() =
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    GL.DrawArrays(BeginMode.Triangles, 0, 3);
+    GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
 
     base.SwapBuffers()
     base.OnRenderFrame e
