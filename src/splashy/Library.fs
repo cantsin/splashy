@@ -46,7 +46,8 @@ type Game() =
                        x2 = Vector3d(0.5, 0.5, 0.0);
                        x3 = Vector3d(0.0, 0.5, 0.0);
                        x4 = Vector3d(0.0, 0.0, 0.0); }
-    assert(coplanarity quad)
+    if not (coplanarity quad) then
+      failwith "Invalid quad."
 
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
     GL.Enable(EnableCap.DepthTest)
