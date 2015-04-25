@@ -1,7 +1,5 @@
 ﻿namespace splashy
 
-open Microsoft.FSharp.Core.Operators
-
 open Vector
 
 module Quad =

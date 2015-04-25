@@ -11,6 +11,7 @@ open OpenTK.Input
 
 open Vector
 open Quad
+open Aabb
 
 type Game() =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
@@ -42,12 +43,8 @@ type Game() =
   do base.VSync <- VSyncMode.On
 
   override o.OnLoad e =
-    let quad: Quad = { x1 = Vector3d(0.5, 0.0, 0.0);
-                       x2 = Vector3d(0.5, 0.5, 0.0);
-                       x3 = Vector3d(0.0, 0.5, 0.0);
-                       x4 = Vector3d(0.0, 0.0, 0.0); }
-    if not (coplanarity quad) then
-      failwith "Invalid quad."
+    let aabb: Aabb = { min_bounds = Vector3d(-0.5, -0.5, -0.5);
+                       max_bounds = Vector3d(0.5, 0.5, 0.5) }
 
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
     GL.Enable(EnableCap.DepthTest)
@@ -77,7 +74,7 @@ type Game() =
       array
 
     // Transfer the vertices from CPU to GPU.
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(4 * 4 * sizeof<double>), raw quad, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(6 * 4 * 4 * sizeof<double>), raw aabb, BufferUsageHint.StaticDraw)
     GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
     GL.UseProgram(program)
 
@@ -88,7 +85,7 @@ type Game() =
 
     base.OnLoad e
 
-  override this.OnUnload(e) =
+  override o.OnUnload(e) =
     GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
     GL.DeleteBuffer(verticesVbo)
     GL.DeleteVertexArray(vao)
@@ -119,7 +116,7 @@ type Game() =
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    GL.DrawArrays(PrimitiveType.Quads, 0, 4);
+    GL.DrawArrays(PrimitiveType.Quads, 0, 24);
 
     base.SwapBuffers()
     base.OnRenderFrame e
