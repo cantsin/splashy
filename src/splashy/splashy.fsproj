@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="Vector.fs" />
     <Compile Include="Quad.fs" />
+    <Compile Include="Grid.fs" />
     <Compile Include="Library.fs" />
     <None Include="Script.fsx" />
     <None Include="paket.references" />

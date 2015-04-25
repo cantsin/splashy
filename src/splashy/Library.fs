@@ -77,7 +77,7 @@ type Game() =
       array
 
     // Transfer the vertices from CPU to GPU.
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(3 * 4 * sizeof<double>), raw quad, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(4 * 4 * sizeof<double>), raw quad, BufferUsageHint.StaticDraw)
     GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
     GL.UseProgram(program)
 
