@@ -62,11 +62,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Vector.fs" />
+    <Compile Include="Quad.fs" />
     <Compile Include="Library.fs" />
     <None Include="Script.fsx" />
     <None Include="paket.references" />
     <None Include="paket.template" />
-    <Compile Include="Quad.fs" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

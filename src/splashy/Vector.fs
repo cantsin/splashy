@@ -7,10 +7,15 @@ module Vector =
       val y: float
       val z: float
       new(x: float, y: float, z:float) = { x = x; y = y; z = z; }
+      static member (.+) (v1: Vector3d, v2: Vector3d) = Vector3d(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
+      static member (.-) (v1: Vector3d, v2: Vector3d) = Vector3d(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z)
+      static member (.*) (v: Vector3d, f) = Vector3d(v.x * f, v.y * f, v.z * f)
+      static member dot (v1: Vector3d) (v2: Vector3d) = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+      static member cross (v1: Vector3d) (v2: Vector3d) =
+        Vector3d(v1.y * v2.z - v1.z * v2.y,
+                 v1.z * v2.x - v1.x * v2.z,
+                 v1.x * v2.y - v1.y * v2.x)
     end
-
-  let add (v1: Vector3d) (v2: Vector3d) = Vector3d(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
-  let mult (v: Vector3d) f = Vector3d(v.x * f, v.y * f, v.z * f)
 
   // partial derivatives
   type Partial = X | Y | Z
