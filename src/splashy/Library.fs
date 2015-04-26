@@ -34,14 +34,6 @@ type Game() =
 
   do base.VSync <- VSyncMode.On
 
-  let positionData = [|-0.7f; -0.7f;  0.7f; 1.0f;
-                      0.7f; -0.7f;  0.7f; 1.0f;
-                      0.7f;  0.7f;  0.7f; 1.0f;
-                      -0.7f;  0.7f;  0.7f; 1.0f;
-                      -0.7f; -0.7f; -0.7f; 1.0f;
-                      0.7f; -0.7f; -0.7f; 1.0f;
-                      0.7f;  0.7f; -0.7f; 1.0f;
-                      -0.7f;  0.7f; -0.7f; 1.0f; |]
   let indicesData = [|
                      // front face
                      0; 3; 2; 1;
@@ -65,6 +57,10 @@ type Game() =
                     -1.0f; 1.0f; -1.0f; 0.0f; |]
 
   override o.OnLoad e =
+
+    let aabb: Aabb = { min_bounds = Vector3d(-0.5, -0.5, -0.5);
+                       max_bounds = Vector3d(0.5, 0.5, 0.5) }
+    let positionData = Aabb.raw aabb
 
     vertexShader <-
       let shader = GL.CreateShader(ShaderType.VertexShader)
@@ -93,10 +89,10 @@ type Game() =
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(positionData.Length * 16), positionData, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(positionData.Length * 32), positionData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(0)
     GL.BindAttribLocation(vertexShader, 0, "vertex_position")
-    GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 16, 0)
+    GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Double, false, 32, 0)
 
     normals <-
       let buffer = GL.GenBuffer()
