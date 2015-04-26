@@ -34,33 +34,11 @@ type Game() =
 
   do base.VSync <- VSyncMode.On
 
-  let indicesData = [|
-                     // front face
-                     0; 3; 2; 1;
-                     // top face
-                     3; 2; 6; 7;
-                     // back face
-                     7; 6; 5; 4;
-                     // left face
-                     4; 0; 3; 7;
-                     // bottom face
-                     4; 5; 1; 0;
-                     // right face
-                     1; 5; 6; 2; |]
-  let normalData = [| -1.0f; -1.0f; 1.0f; 0.0f;
-                    1.0f; -1.0f; 1.0f; 0.0f;
-                    1.0f; 1.0f; 1.0f; 0.0f;
-                    -1.0f; 1.0f; 1.0f; 0.0f;
-                    -1.0f; -1.0f; -1.0f; 0.0f;
-                    1.0f; -1.0f; -1.0f; 0.0f;
-                    1.0f; 1.0f; -1.0f; 0.0f;
-                    -1.0f; 1.0f; -1.0f; 0.0f; |]
-
   override o.OnLoad e =
 
     let aabb: Aabb = { min_bounds = Vector3d(-0.5, -0.5, -0.5);
-                       max_bounds = Vector3d(0.5, 0.5, 0.5) }
-    let positionData = Aabb.raw aabb
+                       max_bounds = Vector3d(0.3, 0.3, 0.3) }
+    let positionData = Aabb.rawData aabb
 
     vertexShader <-
       let shader = GL.CreateShader(ShaderType.VertexShader)

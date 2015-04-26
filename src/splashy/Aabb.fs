@@ -18,8 +18,8 @@ module Aabb =
     p.y >= a.min_bounds.y && p.y <= a.max_bounds.y &&
     p.z >= a.min_bounds.z && p.z <= a.max_bounds.z
 
-  let raw a =
-    // eight vertices.
+  // for rendering purposes.
+  let rawData a =
     [| a.min_bounds.x; a.min_bounds.y; a.max_bounds.z; 1.0;
        a.max_bounds.x; a.min_bounds.y; a.max_bounds.z; 1.0;
        a.max_bounds.x; a.max_bounds.y; a.max_bounds.z; 1.0;
@@ -28,3 +28,19 @@ module Aabb =
        a.max_bounds.x; a.min_bounds.y; a.min_bounds.z; 1.0;
        a.max_bounds.x; a.max_bounds.y; a.min_bounds.z; 1.0;
        a.min_bounds.x; a.max_bounds.y; a.min_bounds.z; 1.0 |]
+
+  let indicesData = [| 0; 3; 2; 1;    // front face
+                       3; 2; 6; 7;    // top face
+                       7; 6; 5; 4;    // back face
+                       4; 0; 3; 7;    // left face
+                       4; 5; 1; 0;    // bottom face
+                       1; 5; 6; 2; |] // right face
+
+  let normalData = [| -1.0f; -1.0f;  1.0f; 0.0f;
+                       1.0f; -1.0f;  1.0f; 0.0f;
+                       1.0f;  1.0f;  1.0f; 0.0f;
+                      -1.0f;  1.0f;  1.0f; 0.0f;
+                      -1.0f; -1.0f; -1.0f; 0.0f;
+                       1.0f; -1.0f; -1.0f; 0.0f;
+                       1.0f;  1.0f; -1.0f; 0.0f;
+                      -1.0f;  1.0f; -1.0f; 0.0f; |]

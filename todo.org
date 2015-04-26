@@ -3,8 +3,8 @@
 ** TODO draw bounds
 ** TODO change dynamic_grid_update to account for bounds
 * display of markers [0/3]
-** TODO randomly scatter markers throughout the bounds for testing
 ** TODO generic function to draw a cube
+** TODO randomly scatter markers throughout the bounds for testing
 ** TODO draw markers
 * simulation [0/1]
 ** TODO -> moves simulation forward
