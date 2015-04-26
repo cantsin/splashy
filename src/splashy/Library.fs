@@ -62,27 +62,27 @@ type Game() =
 
   do base.VSync <- VSyncMode.On
 
-  let positionData = [|Vector3(-1.0f, -1.0f,  1.0f);
-                      Vector3( 1.0f, -1.0f,  1.0f);
-                      Vector3( 1.0f,  1.0f,  1.0f);
-                      Vector3(-1.0f,  1.0f,  1.0f);
-                      Vector3(-1.0f, -1.0f, -1.0f);
-                      Vector3( 1.0f, -1.0f, -1.0f);
-                      Vector3( 1.0f,  1.0f, -1.0f);
-                      Vector3(-1.0f,  1.0f, -1.0f)|]
+  let positionData = [|Vector3(-0.7f, -0.7f,  0.7f);
+                      Vector3( 0.7f, -0.7f,  0.7f);
+                      Vector3( 0.7f,  0.7f,  0.7f);
+                      Vector3(-0.7f,  0.7f,  0.7f);
+                      Vector3(-0.7f, -0.7f, -0.7f);
+                      Vector3( 0.7f, -0.7f, -0.7f);
+                      Vector3( 0.7f,  0.7f, -0.7f);
+                      Vector3(-0.7f,  0.7f, -0.7f)|]
   let indicesData = [|
                      // front face
-                     0; 1; 2; 2; 3; 0;
+                     0; 3; 2; 1;
                      // top face
-                     3; 2; 6; 6; 7; 3;
+                     3; 2; 6; 7;
                      // back face
-                     7; 6; 5; 5; 4; 7;
+                     7; 6; 5; 4;
                      // left face
-                     4; 0; 3; 3; 7; 4;
+                     4; 0; 3; 7;
                      // bottom face
-                     0; 1; 5; 5; 4; 0;
+                     4; 5; 1; 0;
                      // right face
-                     1; 5; 6; 6; 2; 1; |]
+                     1; 5; 6; 2; |]
   let normalData = [| Vector3(-1.0f, -1.0f,  1.0f);
                     Vector3( 1.0f, -1.0f,  1.0f);
                     Vector3( 1.0f,  1.0f,  1.0f);
@@ -153,6 +153,7 @@ type Game() =
   override o.OnUnload(e) =
     GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
     GL.DeleteBuffer(vbo)
+    GL.DeleteBuffer(normals)
     GL.DeleteBuffer(indices)
 
     GL.UseProgram(0)
@@ -184,10 +185,10 @@ type Game() =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
     time <- time + (float32)e.Time;
-    let mutable lookat = Matrix4.RotateY(time) * Matrix4.LookAt(Vector3(0.0f, 0.0f, -4.0f), Vector3.Zero, Vector3.UnitY)
+    let mutable lookat = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.LookAt(Vector3(0.0f, 0.0f, -4.0f), Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
-    GL.DrawElements(BeginMode.Triangles, indicesData.Length, DrawElementsType.UnsignedInt, 0)
+    GL.DrawElements(BeginMode.Quads, indicesData.Length, DrawElementsType.UnsignedInt, 0)
 
     GL.Flush()
     base.SwapBuffers()
