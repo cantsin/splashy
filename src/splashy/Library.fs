@@ -24,21 +24,65 @@ type Game() =
   let mutable vertexShader = 0
   let mutable fragmentShader = 0
   let mutable program = 0
-  let mutable vbo = 0
-  let mutable indices = 0;
-  let mutable normals = 0;
+  let mutable vaos = []
 
   let mutable projectionLocation = 0
   let mutable modelViewLocation = 0
-  let mutable time = 0.0f;
+  let mutable time = 0.0f
 
   do base.VSync <- VSyncMode.On
 
-  override o.OnLoad e =
+  let samples = [{ min_bounds = Vector3d(-0.5, -0.5, -0.5);
+                   max_bounds = Vector3d(-0.3, -0.3, -0.3) };
+                 { min_bounds = Vector3d(-0.8, -0.8, -0.8);
+                   max_bounds = Vector3d(-0.7, -0.7, -0.7) };
+                 { min_bounds = Vector3d(-0.1, -0.1, -0.1);
+                   max_bounds = Vector3d( 0.0,  0.0,  0.0) }]
 
-    let aabb: Aabb = { min_bounds = Vector3d(-0.5, -0.5, -0.5);
-                       max_bounds = Vector3d(0.3, 0.3, 0.3) }
-    let positionData = Aabb.rawData aabb
+  let add_aabb (data: float []) =
+    let mutable vao =
+      let array = GL.GenVertexArray()
+      GL.BindVertexArray(array)
+      array
+
+    let mutable vbo =
+      let buffer = GL.GenBuffer()
+      GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
+      buffer
+    let vertexPosition = GL.GetAttribLocation(program, "vertex_position")
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * 4 * sizeof<float>), data, BufferUsageHint.StaticDraw)
+    GL.EnableVertexAttribArray(vertexPosition)
+    GL.BindAttribLocation(vertexShader, vertexPosition, "vertex_position")
+    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, 4 * sizeof<float>, 0)
+
+    let mutable normals =
+      let buffer = GL.GenBuffer()
+      GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
+      buffer
+    let vertexNormal = GL.GetAttribLocation(program, "vertex_normal")
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(Aabb.normalData.Length * 4 * sizeof<float32>), Aabb.normalData, BufferUsageHint.StaticDraw)
+    GL.EnableVertexAttribArray(vertexNormal)
+    GL.BindAttribLocation(vertexShader, vertexNormal, "vertex_normal")
+    GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, 4 * sizeof<float32>, 0)
+
+    let mutable indices =
+      let buffer = GL.GenBuffer()
+      GL.BindBuffer(BufferTarget.ElementArrayBuffer, buffer)
+      buffer
+    GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(Aabb.indicesData.Length * 4 * sizeof<int>), Aabb.indicesData, BufferUsageHint.StaticDraw)
+
+    GL.BindVertexArray(0)
+    GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
+    GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0)
+    GL.DisableVertexAttribArray(vertexPosition)
+    GL.DisableVertexAttribArray(vertexNormal)
+    GL.DeleteBuffer(vbo)
+    GL.DeleteBuffer(normals)
+    GL.DeleteBuffer(indices)
+
+    vaos <- vao :: vaos
+
+  override o.OnLoad e =
 
     vertexShader <-
       let shader = GL.CreateShader(ShaderType.VertexShader)
@@ -63,32 +107,12 @@ type Game() =
       failwith (sprintf "Shader compilation failed:\n%A" s)
     GL.UseProgram(program)
 
-    vbo <-
-      let buffer = GL.GenBuffer()
-      GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
-      buffer
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(positionData.Length * 32), positionData, BufferUsageHint.StaticDraw)
-    GL.EnableVertexAttribArray(0)
-    GL.BindAttribLocation(vertexShader, 0, "vertex_position")
-    GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Double, false, 32, 0)
-
-    normals <-
-      let buffer = GL.GenBuffer()
-      GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
-      buffer
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(normalData.Length * 16), normalData, BufferUsageHint.StaticDraw)
-    GL.EnableVertexAttribArray(1)
-    GL.BindAttribLocation(vertexShader, 1, "vertex_normal")
-    GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 16, 0)
-
-    indices <-
-      let buffer = GL.GenBuffer()
-      GL.BindBuffer(BufferTarget.ElementArrayBuffer, buffer)
-      buffer
-    GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(indicesData.Length * 16), indicesData, BufferUsageHint.StaticDraw)
-
     projectionLocation <- GL.GetUniformLocation(program, "projectionMatrix")
     modelViewLocation <- GL.GetUniformLocation(program, "modelViewMatrix")
+
+    // testing purposes.
+    for sample in samples do
+      Aabb.rawData sample |> add_aabb
 
     // other state
     GL.Enable(EnableCap.DepthTest)
@@ -97,10 +121,6 @@ type Game() =
     base.OnLoad e
 
   override o.OnUnload(e) =
-    GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
-    GL.DeleteBuffer(vbo)
-    GL.DeleteBuffer(normals)
-    GL.DeleteBuffer(indices)
 
     GL.UseProgram(0)
     GL.DeleteProgram(program)
@@ -130,11 +150,14 @@ type Game() =
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    time <- time + (float32)e.Time;
-    let mutable lookat = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.LookAt(Vector3(0.0f, 0.0f, -4.0f), Vector3.Zero, Vector3.UnitY)
+    time <- time + (float32)e.Time
+    let mutable lookat = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.RotateZ(time) * Matrix4.LookAt(Vector3(0.0f, 0.0f, -4.0f), Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
-    GL.DrawElements(BeginMode.Quads, indicesData.Length, DrawElementsType.UnsignedInt, 0)
+    for vao in vaos do
+      GL.BindVertexArray(vao)
+      GL.DrawElements(BeginMode.Quads, indicesData.Length, DrawElementsType.UnsignedInt, 0)
+      GL.BindVertexArray(0)
 
     GL.Flush()
     base.SwapBuffers()
@@ -143,5 +166,5 @@ type Game() =
 module Library =
   let game = new Game()
   let version = GL.GetString(StringName.Version)
-  printfn "GL version %A" version
+  printfn "GL version: %A" version
   do game.Run(30.)

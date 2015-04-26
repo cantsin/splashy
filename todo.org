@@ -3,7 +3,9 @@
 ** TODO draw bounds
 ** TODO change dynamic_grid_update to account for bounds
 * display of markers [0/3]
-** TODO generic function to draw a cube
+** TODO generic function to draw a marker
+- aabb of predefined size (grid.h)
+- matrix4 – translate only
 ** TODO randomly scatter markers throughout the bounds for testing
 ** TODO draw markers
 * simulation [0/1]
