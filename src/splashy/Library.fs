@@ -34,14 +34,14 @@ type Game() =
 
   do base.VSync <- VSyncMode.On
 
-  let positionData = [|Vector3(-0.7f, -0.7f,  0.7f);
-                      Vector3( 0.7f, -0.7f,  0.7f);
-                      Vector3( 0.7f,  0.7f,  0.7f);
-                      Vector3(-0.7f,  0.7f,  0.7f);
-                      Vector3(-0.7f, -0.7f, -0.7f);
-                      Vector3( 0.7f, -0.7f, -0.7f);
-                      Vector3( 0.7f,  0.7f, -0.7f);
-                      Vector3(-0.7f,  0.7f, -0.7f)|]
+  let positionData = [|-0.7f; -0.7f;  0.7f; 1.0f;
+                      0.7f; -0.7f;  0.7f; 1.0f;
+                      0.7f;  0.7f;  0.7f; 1.0f;
+                      -0.7f;  0.7f;  0.7f; 1.0f;
+                      -0.7f; -0.7f; -0.7f; 1.0f;
+                      0.7f; -0.7f; -0.7f; 1.0f;
+                      0.7f;  0.7f; -0.7f; 1.0f;
+                      -0.7f;  0.7f; -0.7f; 1.0f; |]
   let indicesData = [|
                      // front face
                      0; 3; 2; 1;
@@ -55,14 +55,14 @@ type Game() =
                      4; 5; 1; 0;
                      // right face
                      1; 5; 6; 2; |]
-  let normalData = [| Vector3(-1.0f, -1.0f,  1.0f);
-                    Vector3( 1.0f, -1.0f,  1.0f);
-                    Vector3( 1.0f,  1.0f,  1.0f);
-                    Vector3(-1.0f,  1.0f,  1.0f);
-                    Vector3(-1.0f, -1.0f, -1.0f);
-                    Vector3( 1.0f, -1.0f, -1.0f);
-                    Vector3( 1.0f,  1.0f, -1.0f);
-                    Vector3(-1.0f,  1.0f, -1.0f) |]
+  let normalData = [| -1.0f; -1.0f; 1.0f; 0.0f;
+                    1.0f; -1.0f; 1.0f; 0.0f;
+                    1.0f; 1.0f; 1.0f; 0.0f;
+                    -1.0f; 1.0f; 1.0f; 0.0f;
+                    -1.0f; -1.0f; -1.0f; 0.0f;
+                    1.0f; -1.0f; -1.0f; 0.0f;
+                    1.0f; 1.0f; -1.0f; 0.0f;
+                    -1.0f; 1.0f; -1.0f; 0.0f; |]
 
   override o.OnLoad e =
 
@@ -93,25 +93,25 @@ type Game() =
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(positionData.Length * Vector3.SizeInBytes), positionData, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(positionData.Length * 16), positionData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(0)
     GL.BindAttribLocation(vertexShader, 0, "vertex_position")
-    GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, Vector3.SizeInBytes, 0)
+    GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 16, 0)
 
     normals <-
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(normalData.Length * Vector3.SizeInBytes), normalData, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(normalData.Length * 16), normalData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(1)
     GL.BindAttribLocation(vertexShader, 1, "vertex_normal")
-    GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, Vector3.SizeInBytes, 0)
+    GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 16, 0)
 
     indices <-
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ElementArrayBuffer, buffer)
       buffer
-    GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(indicesData.Length * Vector3.SizeInBytes), indicesData, BufferUsageHint.StaticDraw)
+    GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(indicesData.Length * 16), indicesData, BufferUsageHint.StaticDraw)
 
     projectionLocation <- GL.GetUniformLocation(program, "projectionMatrix")
     modelViewLocation <- GL.GetUniformLocation(program, "modelViewMatrix")
