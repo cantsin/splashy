@@ -3,6 +3,7 @@ namespace splashy
 open System
 open System.Drawing
 open System.Collections.Generic
+open System.IO
 
 open OpenTK
 open OpenTK.Graphics
@@ -17,37 +18,8 @@ open Simulator
 type Game() =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
 
-  let vertexSource = """
-    #version 330
-    precision highp float;
-    uniform mat4 projectionMatrix;
-    uniform mat4 modelViewMatrix;
-    in vec3 vertex_position;
-    in vec3 vertex_normal;
-
-    out vec3 normal;
-    void main(void)
-    {
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(vertex_position, 1.0);
-      normal = (modelViewMatrix * vec4(vertex_normal, 0)).xyz;
-    }
-    """
-
-  let fragmentSource = """
-    #version 330
-    const vec3 ambient = vec3(0.1, 0.1, 0.1);
-    const vec3 lightVecNormalized = normalize(vec3(0.5, 0.5, 2));
-    const vec3 lightColor = vec3(1.0, 0.8, 0.2);
-
-    in vec3 normal;
-
-    out vec4 outputColor;
-    void main(void)
-    {
-      float diffuse = clamp(dot(lightVecNormalized, normalize(normal)), 0.0, 1.0);
-      outputColor = vec4(ambient + diffuse * lightColor, 1.0);
-    }
-    """
+  let vertexFile = "src/splashy/shaders/simple.vert"
+  let fragmentFile = "src/splashy/shaders/simple.frag"
 
   let mutable vertexShader = 0
   let mutable fragmentShader = 0
@@ -96,12 +68,12 @@ type Game() =
 
     vertexShader <-
       let shader = GL.CreateShader(ShaderType.VertexShader)
-      GL.ShaderSource(shader, vertexSource)
+      GL.ShaderSource(shader, File.ReadAllText vertexFile)
       GL.CompileShader(shader)
       shader
     fragmentShader <-
       let shader = GL.CreateShader(ShaderType.FragmentShader)
-      GL.ShaderSource(shader, fragmentSource)
+      GL.ShaderSource(shader, File.ReadAllText fragmentFile)
       GL.CompileShader(shader)
       shader
     program <-
