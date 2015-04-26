@@ -24,3 +24,5 @@ module Simulator =
                   Grid.add m { pressure = 0.0; media = Fluid; layer = 0; velocity = Vector3d() }
                   printf "%A" m
               ) Grid.markers
+
+  let advance () = ()

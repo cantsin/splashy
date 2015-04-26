@@ -8,3 +8,5 @@
 ** TODO draw markers
 * simulation [0/1]
 ** TODO -> moves simulation forward
+** TODO look at Microsoft.FSharp.Math (sparse matrix solver?)
+- http://tomasp.net/blog/powerpack-matrix.aspx/
