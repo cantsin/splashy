@@ -1,7 +1,7 @@
 #version 330
 const vec3 ambient = vec3(0.1, 0.1, 0.1);
-const vec3 lightVecNormalized = normalize(vec3(0.5, 0.5, 2));
-const vec3 lightColor = vec3(1.0, 0.8, 0.2);
+const vec3 lightVecNormalized = normalize(vec3(0.5, 0.5, 2.0));
+const vec3 lightColor = vec3(0.3, 0.8, 0.2);
 
 in vec3 normal;
 

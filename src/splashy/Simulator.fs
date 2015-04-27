@@ -14,7 +14,7 @@ module Simulator =
   let get_time_step = time_step_constant * h / max_velocity
 
   let bounds = { min_bounds = Vector3d(-1.0, -1.0, -1.0);
-                 max_bounds = Vector3d(1.0, 1.0, 1.0) }
+                 max_bounds = Vector3d( 1.0,  1.0,  1.0) }
 
   let dynamic_grid_update () =
     Grid.reset ()

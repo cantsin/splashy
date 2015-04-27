@@ -1,14 +1,9 @@
-* bounds [0/3]
-** TODO set rough bounds for whole simulator
-** TODO draw bounds
+* bounds [0/1]
 ** TODO change dynamic_grid_update to account for bounds
-* display of markers [0/3]
-** TODO generic function to draw a marker
-- aabb of predefined size (grid.h)
-- matrix4 – translate only
-** TODO randomly scatter markers throughout the bounds for testing
-** TODO draw markers
+* drawables [0/3]
+** TODO camera
+** TODO markers
+** TODO transparency?
 * simulation [0/1]
-** TODO -> moves simulation forward
 ** TODO look at Microsoft.FSharp.Math (sparse matrix solver?)
 - http://tomasp.net/blog/powerpack-matrix.aspx/

@@ -14,7 +14,7 @@ module Grid =
 
   // configuration options.
   [<Literal>]
-  let h = 1.0
+  let h = 0.1
   [<Literal>]
   let time_step_constant = 2.5
 
