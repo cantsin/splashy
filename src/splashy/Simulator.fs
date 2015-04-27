@@ -11,22 +11,45 @@ module Simulator =
   let max_velocity = 100.0 // for now
 
   // pre-calculated.
-  let get_time_step = time_step_constant * h / max_velocity
+  let get_time_step = Grid.time_step_constant * Grid.h / max_velocity
 
   let bounds = { min_bounds = Vector3d(-1.0, -1.0, -1.0);
                  max_bounds = Vector3d( 1.0,  1.0,  1.0) }
 
   let dynamic_grid_update () =
     Grid.reset ()
+    // synchronize fluid markers with the grid
     Seq.iter (fun m ->
               match Grid.get m with
-                | Some(c) ->
-                  match c.media with
-                    | Solid -> () // do nothing
-                    | _ -> Grid.set m { c with media = Fluid; layer = 0; }
+                | Some(c) when not (Grid.is_solid c) ->
+                    Grid.set m { c with media = Fluid; layer = 0; }
                 | None ->
-                  Grid.add m { pressure = 0.0; media = Fluid; layer = 0; velocity = Vector3d() }
-                  printf "%A" m
+                    if Aabb.contains bounds (Grid.to_vector m) then
+                      Grid.add m { Grid.default_cell with media = Fluid; layer = 0; }
+                | _ -> ()
               ) Grid.markers
+    // create air buffer zones around the fluid
+    let max_distance = max 2 (int (ceil Grid.time_step_constant))
+    for i in 1..max_distance do
+      let current_layer = i - 1
+      let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
+      let all_neighbors = Seq.collect Grid.neighbors current
+      Seq.iter (fun where ->
+                match Grid.get where with
+                  | Some(c) when not (Grid.is_solid c) && c.layer = -1 ->
+                      Grid.set where { c with media = Air; layer = i }
+                  | None ->
+                      if Aabb.contains bounds (Grid.to_vector where) then
+                        Grid.add where { Grid.default_cell with media = Fluid; layer = i }
+                      else
+                        Grid.add where { Grid.default_cell with media = Solid; layer = i }
+                  | _ -> ()
+                ) all_neighbors
+      ()
+    // delete any leftover cells.
+    let leftover = Grid.filter_values (fun c -> c.layer = -1)
+    Seq.iter Grid.delete leftover
 
-  let advance () = ()
+  let advance () =
+    printfn "Moving simulation forward."
+    ()
