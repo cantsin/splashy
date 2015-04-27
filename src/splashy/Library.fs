@@ -28,6 +28,7 @@ type Game() =
 
   let mutable projectionLocation = 0
   let mutable modelViewLocation = 0
+  let mutable vertexLocation = 0 // allow VAOs to set their own matrix transform
   let mutable time = 0.0f
 
   do base.VSync <- VSyncMode.On
@@ -59,10 +60,11 @@ type Game() =
 
     projectionLocation <- GL.GetUniformLocation(program, "projectionMatrix")
     modelViewLocation <- GL.GetUniformLocation(program, "modelViewMatrix")
+    vertexLocation <- GL.GetUniformLocation(program, "vertex_mat")
 
     let bounds = new BoundingArea ()
     drawables <- (bounds :> IDrawable) :: drawables
-    for i in 0..10 do
+    for i in 0..9 do
       let cell = new Cell ()
       cell.set_translation (Vector3((float32 i)/10.0f, (float32 i)/10.0f, (float32 i)/10.0f))
       drawables <- (cell :> IDrawable) :: drawables
@@ -115,7 +117,7 @@ type Game() =
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
     for drawable in drawables do
-      drawable.render ()
+      drawable.render vertexLocation
 
     GL.Flush()
     base.SwapBuffers()

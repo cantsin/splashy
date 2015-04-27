@@ -10,7 +10,7 @@ open Simulator
 
 type IDrawable =
   abstract member prepare: int -> int -> unit
-  abstract member render: unit -> unit
+  abstract member render: int -> unit
   abstract member destroy: unit -> unit
 
 // encapsulate GL calls to draw the bounding area, markers, and cells.
@@ -61,10 +61,12 @@ module Drawables =
 
   type BoundingArea () =
     let mutable vao = 0
+    let mutable position = Matrix4.Identity
     interface IDrawable with
       member this.prepare p vs =
         vao <- prepare_aabb p vs (Aabb.rawData Simulator.bounds)
-      member this.render () =
+      member this.render location =
+        GL.UniformMatrix4(location, false, &position)
         GL.BindVertexArray(vao)
         GL.DrawElements(BeginMode.Quads, indicesData.Length, DrawElementsType.UnsignedInt, 0)
         GL.BindVertexArray(0)
@@ -72,16 +74,19 @@ module Drawables =
         GL.DeleteVertexArray(vao)
 
   type Cell () =
-    let cell = { min_bounds = Vector.Vector3d(-Grid.h, -Grid.h, -Grid.h);
-                 max_bounds = Vector.Vector3d( Grid.h,  Grid.h,  Grid.h) }
+    let cell = { min_bounds = Vector.Vector3d(-Grid.h/2.0, -Grid.h/2.0, -Grid.h/2.0);
+                 max_bounds = Vector.Vector3d( Grid.h/2.0,  Grid.h/2.0,  Grid.h/2.0) }
     let mutable vao = 0
+    let mutable vertex_mat = 0
     let mutable transform = Vector3.Zero
     interface IDrawable with
       member this.prepare p vs =
+        vertex_mat <- GL.GetUniformLocation(p, "vertex_mat")
         let newVao = prepare_aabb p vs (Aabb.rawData cell)
         vao <- newVao
-      member this.render () =
+      member this.render location =
         let mutable m = Matrix4.CreateTranslation(transform)
+        GL.UniformMatrix4(location, false, &m)
         GL.BindVertexArray(vao)
         GL.DrawElements(BeginMode.Quads, indicesData.Length, DrawElementsType.UnsignedInt, 0)
         GL.BindVertexArray(0)
