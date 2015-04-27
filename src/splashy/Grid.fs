@@ -6,6 +6,12 @@ open Vector
 
 module Grid =
 
+  // configuration options.
+  [<Literal>]
+  let h = 10.0
+  [<Literal>]
+  let time_step_constant = 2.5
+
   [<CustomEquality;CustomComparison>]
   type Coord =
     { x: int; y: int; z: int }
@@ -22,18 +28,14 @@ module Grid =
           | _ -> invalidArg "Coord" "cannot compare values of different types."
     member this.to_vector () =
       Vector3d(float this.x, float this.y, float this.z)
-    member this.neighbors () = [| { this with x = this.x + 1 };
-                                  { this with x = this.x - 1 };
-                                  { this with y = this.y + 1 };
-                                  { this with y = this.y - 1 };
-                                  { this with z = this.z + 1 };
-                                  { this with z = this.z - 1 }; |]
-
-  // configuration options.
-  [<Literal>]
-  let h = 1.0
-  [<Literal>]
-  let time_step_constant = 2.5
+    member this.neighbors () =
+      let h = int h
+      [| { this with x = this.x + h };
+         { this with x = this.x - h };
+         { this with y = this.y + h };
+         { this with y = this.y - h };
+         { this with z = this.z + h };
+         { this with z = this.z - h }; |]
 
   type Media = Air | Fluid | Solid
 
@@ -45,7 +47,6 @@ module Grid =
   let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d() }
 
   let mutable grid = new Dictionary<Coord, Cell>()
-  let mutable markers: Coord list = []
 
   let add where c = grid.Add (where, c)
 

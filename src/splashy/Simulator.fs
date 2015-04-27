@@ -17,19 +17,10 @@ module Simulator =
   let bounds = { min_bounds = Vector3d(-h, -h, -h);
                  max_bounds = Vector3d( h,  h,  h) }
 
-  // generate a random amount of markers to begin with (testing purposes only)
-  let generate n =
-    let r = System.Random()
-    let l = int h
-    Grid.markers <- [ for _ in 0..n-1 do
-                        let x = r.Next(-l, l)
-                        let y = r.Next(-l, l)
-                        let z = r.Next(-l, l)
-                        yield { x = x; y = y; z = z; } ]
+  let mutable markers: Coord list = []
 
-  let dynamic_grid_update () =
-    Grid.reset ()
-    // synchronize fluid markers with the grid
+  // synchronize fluid markers with the grid
+  let update_fluid_markers () =
     Seq.iter (fun m ->
               match Grid.get m with
                 | Some(c) when not (Grid.is_solid c) ->
@@ -38,8 +29,10 @@ module Simulator =
                     if Aabb.contains bounds (m.to_vector ()) then
                       Grid.add m { Grid.default_cell with media = Fluid; layer = Some(0); }
                 | _ -> ()
-              ) Grid.markers
-    // create air buffer zones around the fluid
+              ) markers
+
+  // create air buffer zones around the fluid
+  let create_air_buffer () =
     let max_distance = max 2 (int (ceil Grid.time_step_constant))
     for i in 1..max_distance do
       let current_layer = Some(i - 1)
@@ -56,12 +49,26 @@ module Simulator =
                         Grid.add where { Grid.default_cell with media = Solid; layer = Some(i) }
                   | _ -> ()
                 ) all_neighbors
-      ()
-    // delete any leftover cells.
+
+  // delete any leftover cells.
+  let excise_unused_grid_cells () =
     let leftover = Grid.filter_values (fun c -> c.layer = None)
     Seq.iter Grid.delete leftover
 
   let advance () =
     printfn "Moving simulation forward."
-    dynamic_grid_update ()
-    ()
+    Grid.reset ()
+    update_fluid_markers ()
+    create_air_buffer ()
+    excise_unused_grid_cells ()
+
+  // generate a random amount of markers to begin with (testing purposes only)
+  let generate n =
+    let r = System.Random()
+    let l = int h
+    markers <- [ for _ in 0..n-1 do
+                 let x = r.Next(-l, l)
+                 let y = r.Next(-l, l)
+                 let z = r.Next(-l, l)
+                 yield { x = x; y = y; z = z; } ]
+    update_fluid_markers ()

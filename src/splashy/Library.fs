@@ -19,13 +19,14 @@ open Simulator
 type Game() =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
 
+  do base.VSync <- VSyncMode.On
+
   let vertexFile = "src/splashy/shaders/simple.vert"
   let fragmentFile = "src/splashy/shaders/simple.frag"
 
   let mutable vertexShader = 0
   let mutable fragmentShader = 0
   let mutable program = 0
-  let mutable drawables = []
 
   let mutable projectionLocation = 0
   let mutable modelViewLocation = 0
@@ -35,26 +36,27 @@ type Game() =
 
   let eye = Vector3(0.0f, 0.0f, -400.0f)
 
-  do base.VSync <- VSyncMode.On
+  // drawables.
+  let bounds = new AreaBounds () // fixed, does not change
+  let mutable drawables = []
+  let mutable cells = []
 
-  // set up the initial simulator state and prepare the drawables.
-  let initialize () =
+  let refresh_drawables () =
+    for (cell: IDrawable) in cells do
+      cell.destroy ()
 
-    let bounds = new AreaBounds ()
-    drawables <- (bounds :> IDrawable) :: drawables
+    cells <- [ for (KeyValue(coord, cell)) in Grid.grid do
+               let x = float32 coord.x
+               let y = float32 coord.y
+               let z = float32 coord.z
+               let cellbounds = new CellBounds ()
+               cellbounds.set_translation (Vector3(x, y, z))
+               yield cellbounds :> IDrawable ]
 
-    let N = 10
-    Simulator.generate N
-    for marker in Grid.markers do
-      let x = float32 marker.x
-      let y = float32 marker.y
-      let z = float32 marker.z
-      let cell = new CellBounds ()
-      cell.set_translation (Vector3(x, y, z))
-      drawables <- (cell :> IDrawable) :: drawables
+    for (cell: IDrawable) in cells do
+      cell.prepare program vertexShader
 
-    for drawable in drawables do
-      drawable.prepare program vertexShader
+    drawables <- cells @ [(bounds :> IDrawable)] // bounds needs to be last (for transparency)
 
   override o.OnLoad e =
 
@@ -91,7 +93,8 @@ type Game() =
     GL.Enable(EnableCap.Blend);
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
-    initialize ()
+    refresh_drawables ()
+    (bounds :> IDrawable).prepare program vertexShader
 
     base.OnLoad e
 
@@ -121,13 +124,16 @@ type Game() =
   override o.OnUpdateFrame e =
     base.OnUpdateFrame e
     if base.Keyboard.[Key.Escape] then base.Close()
-    if base.Keyboard.[Key.Right] then Simulator.advance ()
+    if base.Keyboard.[Key.Right] then
+      Simulator.advance ()
+      refresh_drawables ()
 
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
     time <- time + (float32)e.Time
-    let mutable lookat = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.RotateZ(time) * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
+    let rot = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.RotateZ(time)
+    let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
     for drawable in drawables do
@@ -140,5 +146,8 @@ type Game() =
 module Library =
   let game = new Game()
   let version = GL.GetString(StringName.Version)
+  let N = 10
   printfn "GL version: %A" version
+  printfn "Generating %d random markers" N
+  Simulator.generate N
   do game.Run(30.)

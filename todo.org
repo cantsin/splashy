@@ -1,8 +1,8 @@
-* bounds [1/1]
-** DONE change dynamic_grid_update to account for bounds
-* drawables [1/3]
-** TODO camera
-** DONE markers
+* simulation [0/2]
+** TODO backwards particle trace
+** TODO runge kutta order 2 interpolation
+* graphics [0/2]
+** TODO implement camera
 ** TODO transparency?
 * simulation [0/1]
 ** TODO look at Microsoft.FSharp.Math (sparse matrix solver?)
