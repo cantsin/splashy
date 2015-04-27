@@ -52,4 +52,5 @@ module Simulator =
 
   let advance () =
     printfn "Moving simulation forward."
+    dynamic_grid_update ()
     ()

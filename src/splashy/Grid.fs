@@ -5,7 +5,22 @@ open System.Collections.Generic
 open Vector
 
 module Grid =
-  type Coord = { x: int; y: int; z: int }
+
+  [<CustomEquality;CustomComparison>]
+  type Coord =
+    { x: int; y: int; z: int }
+    override this.GetHashCode () =
+      541 * this.x + 79 * this.y + 31 * this.z
+    override this.Equals that =
+      match that with
+        | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
+        | _ -> false
+    interface System.IComparable with
+      member this.CompareTo that =
+        match that with
+          | :? Coord as c -> compare this c
+          | _ -> invalidArg "Coord" "cannot compare values of different types."
+
   type Media = Air | Fluid | Solid
   type Cell = { pressure: float;
                 media: Media;
@@ -22,27 +37,23 @@ module Grid =
   [<Literal>]
   let time_step_constant = 2.5
 
-  let mutable grid = new Dictionary<int, Cell>()
+  let mutable grid = new Dictionary<Coord, Cell>()
   let mutable markers = new List<Coord>()
 
-  let hash coords = 541 * coords.x + 79 * coords.y + 31 * coords.z
+  let add where c = grid.Add (where, c)
 
-  let add where c = grid.Add (hash where, c)
-
-  let delete where = grid.Remove (hash where)
+  let delete where = let _ = grid.Remove where in ()
 
   let get where =
-    let key = hash where
-    match grid.ContainsKey key with
-      | true -> Some grid.[key]
+    match grid.ContainsKey where with
+      | true -> Some grid.[where]
       | _ -> None
 
   let set where c =
     match get where with
       | None -> failwith "Tried to set non-existent cell."
       | _ ->
-        let key = hash where
-        grid.[key] <- c
+        grid.[where] <- c
 
   let filter_values fn =
     Seq.filter (fun (KeyValue(k, v)) -> fn v) grid |> Seq.map (fun (KeyValue(k, v)) -> k)
