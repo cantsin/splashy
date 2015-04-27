@@ -20,6 +20,20 @@ module Grid =
         match that with
           | :? Coord as c -> compare this c
           | _ -> invalidArg "Coord" "cannot compare values of different types."
+    member this.to_vector () =
+      Vector3d(float this.x, float this.y, float this.z)
+    member this.neighbors () = [| { this with x = this.x + 1 };
+                                  { this with x = this.x - 1 };
+                                  { this with y = this.y + 1 };
+                                  { this with y = this.y - 1 };
+                                  { this with z = this.z + 1 };
+                                  { this with z = this.z - 1 }; |]
+
+  // configuration options.
+  [<Literal>]
+  let h = 1.0
+  [<Literal>]
+  let time_step_constant = 2.5
 
   type Media = Air | Fluid | Solid
 
@@ -29,14 +43,6 @@ module Grid =
                 layer: Option<int>; }
 
   let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d() }
-
-  let to_vector where = Vector3d(float where.x, float where.y, float where.z)
-
-  // configuration options.
-  [<Literal>]
-  let h = 0.1
-  [<Literal>]
-  let time_step_constant = 2.5
 
   let mutable grid = new Dictionary<Coord, Cell>()
   let mutable markers: Coord list = []
@@ -57,19 +63,13 @@ module Grid =
         grid.[where] <- c
 
   let filter_values fn =
-    Seq.filter (fun (KeyValue(k, v)) -> fn v) grid |> Seq.map (fun (KeyValue(k, v)) -> k)
-
-  let neighbors c =
-    [| { c with x = c.x + 1 };
-       { c with x = c.x - 1 };
-       { c with y = c.y + 1 };
-       { c with y = c.y - 1 };
-       { c with z = c.z + 1 };
-       { c with z = c.z - 1 }; |]
+    let result = Seq.filter (fun (KeyValue(k, v)) -> fn v) grid
+    let keys = Seq.map (fun (KeyValue(k, v)) -> k) result
+    // make a copy; we want to avoid writing to the dictionary while iterating over it.
+    new List<Coord> (keys)
 
   let is_solid c = match c.media with Solid -> true | _ -> false
 
   let reset () =
-    let new_grid = Seq.map (fun (KeyValue(k, v)) -> (k, { v with layer = None })) grid
-    grid.Clear()
-    Seq.iter grid.Add new_grid
+    let keys = filter_values (fun _ -> true)
+    Seq.iter (fun k -> set k { grid.[k] with layer = None }) keys

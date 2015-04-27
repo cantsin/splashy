@@ -35,7 +35,7 @@ module Simulator =
                 | Some(c) when not (Grid.is_solid c) ->
                     Grid.set m { c with media = Fluid; layer = Some(0); }
                 | None ->
-                    if Aabb.contains bounds (Grid.to_vector m) then
+                    if Aabb.contains bounds (m.to_vector ()) then
                       Grid.add m { Grid.default_cell with media = Fluid; layer = Some(0); }
                 | _ -> ()
               ) Grid.markers
@@ -44,13 +44,13 @@ module Simulator =
     for i in 1..max_distance do
       let current_layer = Some(i - 1)
       let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
-      let all_neighbors = Seq.collect Grid.neighbors current
+      let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) current
       Seq.iter (fun where ->
                 match Grid.get where with
                   | Some(c) when not (Grid.is_solid c) && c.layer = None ->
                       Grid.set where { c with media = Air; layer = Some(i) }
                   | None ->
-                      if Aabb.contains bounds (Grid.to_vector where) then
+                      if Aabb.contains bounds (where.to_vector ()) then
                         Grid.add where { Grid.default_cell with media = Fluid; layer = Some(i) }
                       else
                         Grid.add where { Grid.default_cell with media = Solid; layer = Some(i) }
