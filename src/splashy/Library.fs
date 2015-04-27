@@ -16,7 +16,7 @@ open Drawables
 open Grid
 open Simulator
 
-type Game() =
+type Splashy() =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
 
   do base.VSync <- VSyncMode.On
@@ -126,7 +126,6 @@ type Game() =
     if base.Keyboard.[Key.Escape] then base.Close()
     if base.Keyboard.[Key.Right] then
       Simulator.advance ()
-      refresh_drawables ()
 
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
@@ -136,6 +135,7 @@ type Game() =
     let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
+    refresh_drawables ()
     for drawable in drawables do
       drawable.render vertexLocation
 
@@ -144,10 +144,10 @@ type Game() =
     base.OnRenderFrame e
 
 module Library =
-  let game = new Game()
+  let splashy = new Splashy()
   let version = GL.GetString(StringName.Version)
   let N = 10
   printfn "GL version: %A" version
   printfn "Generating %d random markers" N
   Simulator.generate N
-  do game.Run(30.)
+  do splashy.Run(30.0)
