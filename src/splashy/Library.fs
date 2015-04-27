@@ -64,9 +64,13 @@ type Game() =
 
     let bounds = new BoundingArea ()
     drawables <- (bounds :> IDrawable) :: drawables
+    let r = System.Random()
     for i in 0..9 do
       let cell = new Cell ()
-      cell.set_translation (Vector3((float32 i)/10.0f, (float32 i)/10.0f, (float32 i)/10.0f))
+      let x = (float32 (r.Next(-i, i))) / 10.0f
+      let y = (float32 (r.Next(-i, i))) / 10.0f
+      let z = (float32 (r.Next(-i, i))) / 10.0f
+      cell.set_translation (Vector3(x, y, z))
       drawables <- (cell :> IDrawable) :: drawables
 
     // initialize.
