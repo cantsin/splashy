@@ -33,6 +33,7 @@ type Splashy() =
   let mutable vertexLocation = 0 // allow VAOs to set their own matrix transform
 
   let mutable time = 0.0f
+  let mutable pressed = false // don't rush through simulation
 
   let eye = Vector3(0.0f, 0.0f, -400.0f)
 
@@ -121,11 +122,19 @@ type Splashy() =
     GL.UniformMatrix4(projectionLocation, false, &projection)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
-  override o.OnUpdateFrame e =
-    base.OnUpdateFrame e
-    if base.Keyboard.[Key.Escape] then base.Close()
-    if base.Keyboard.[Key.Right] then
-      Simulator.advance ()
+  override o.OnKeyDown e =
+    match e.Key with
+      | Key.Escape -> base.Close()
+      | Key.Right ->
+        if not pressed then
+          Simulator.advance ()
+          pressed <- true
+      | _ -> ()
+
+  override o.OnKeyUp e =
+    match e.Key with
+      | Key.Right -> pressed <- false
+      | _ -> ()
 
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
