@@ -30,7 +30,10 @@ type Game() =
   let mutable projectionLocation = 0
   let mutable modelViewLocation = 0
   let mutable vertexLocation = 0 // allow VAOs to set their own matrix transform
+
   let mutable time = 0.0f
+
+  let eye = Vector3(0.0f, 0.0f, -400.0f)
 
   do base.VSync <- VSyncMode.On
 
@@ -43,10 +46,9 @@ type Game() =
     let N = 10
     Simulator.generate N
     for marker in Grid.markers do
-      // constrain to fall within the bounds... sorta.
-      let x = float32 marker.x / float32 N
-      let y = float32 marker.y / float32 N
-      let z = float32 marker.z / float32 N
+      let x = float32 marker.x
+      let y = float32 marker.y
+      let z = float32 marker.z
       let cell = new CellBounds ()
       cell.set_translation (Vector3(x, y, z))
       drawables <- (cell :> IDrawable) :: drawables
@@ -110,9 +112,9 @@ type Game() =
                 base.ClientRectangle.Height)
     let mutable projection = Matrix4.CreatePerspectiveFieldOfView(float32 (Math.PI / 4.0),
                                                                   float32 base.Width / float32 base.Height,
-                                                                  1.f,
-                                                                  64.f)
-    let mutable lookat = Matrix4.LookAt(Vector3(0.0f, 0.0f, -4.0f), Vector3.Zero, Vector3.UnitY)
+                                                                  1.0f,
+                                                                  640.0f)
+    let mutable lookat = Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(projectionLocation, false, &projection)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
@@ -125,7 +127,7 @@ type Game() =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
     time <- time + (float32)e.Time
-    let mutable lookat = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.RotateZ(time) * Matrix4.LookAt(Vector3(0.0f, 0.0f, -4.0f), Vector3.Zero, Vector3.UnitY)
+    let mutable lookat = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.RotateZ(time) * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
     for drawable in drawables do

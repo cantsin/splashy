@@ -13,16 +13,18 @@ module Simulator =
   // pre-calculated.
   let get_time_step = Grid.time_step_constant * Grid.h / max_velocity
 
-  let bounds = { min_bounds = Vector3d(-1.0, -1.0, -1.0);
-                 max_bounds = Vector3d( 1.0,  1.0,  1.0) }
+  let h = 100.0
+  let bounds = { min_bounds = Vector3d(-h, -h, -h);
+                 max_bounds = Vector3d( h,  h,  h) }
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
     let r = System.Random()
-    Grid.markers <- [ for i in 0..n-1 do
-                        let x = r.Next(-n, i)
-                        let y = r.Next(-i, n)
-                        let z = r.Next(-n, n)
+    let l = int h
+    Grid.markers <- [ for _ in 0..n-1 do
+                        let x = r.Next(-l, l)
+                        let y = r.Next(-l, l)
+                        let z = r.Next(-l, l)
                         yield { x = x; y = y; z = z; } ]
 
   let dynamic_grid_update () =
