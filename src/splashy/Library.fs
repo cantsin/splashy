@@ -38,7 +38,7 @@ type Splashy() =
   let eye = Vector3(0.0f, 0.0f, -400.0f)
 
   // drawables.
-  let bounds = new AreaBounds () // fixed, does not change
+  let worldBounds = new AreaBounds () // fixed, does not change
   let mutable drawables = []
   let mutable cells = []
 
@@ -50,14 +50,15 @@ type Splashy() =
                let x = float32 coord.x
                let y = float32 coord.y
                let z = float32 coord.z
-               let cellbounds = new CellBounds ()
+               let cellbounds = new CellBounds(cell)
                cellbounds.set_translation (Vector3(x, y, z))
                yield cellbounds :> IDrawable ]
 
     for (cell: IDrawable) in cells do
       cell.prepare program vertexShader
 
-    drawables <- cells @ [(bounds :> IDrawable)] // bounds needs to be last (for transparency)
+    // world bound needs to be drawn last (transparency reasons)
+    drawables <- cells @ [(worldBounds :> IDrawable)]
 
   override o.OnLoad e =
 
@@ -95,7 +96,7 @@ type Splashy() =
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
     refresh_drawables ()
-    (bounds :> IDrawable).prepare program vertexShader
+    (worldBounds :> IDrawable).prepare program vertexShader
 
     base.OnLoad e
 
@@ -140,7 +141,7 @@ type Splashy() =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
     time <- time + (float32)e.Time
-    let rot = Matrix4.RotateX(time) * Matrix4.RotateY(time) * Matrix4.RotateZ(time)
+    let rot = Matrix4.RotateY(time)
     let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 

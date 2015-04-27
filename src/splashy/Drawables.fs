@@ -1,5 +1,7 @@
 namespace splashy
 
+open System.Linq
+
 open OpenTK
 open OpenTK.Graphics
 open OpenTK.Graphics.OpenGL
@@ -16,7 +18,7 @@ type IDrawable =
 // encapsulate GL calls to draw the bounding area, markers, and cells.
 module Drawables =
 
-  let prepare_aabb (program: int) (vs: int) (data: float []) =
+  let internal prepare_aabb (program: int) (vs: int) (data: float []) =
     let vao =
       let array = GL.GenVertexArray()
       GL.BindVertexArray(array)
@@ -27,35 +29,53 @@ module Drawables =
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
     let vertexPosition = GL.GetAttribLocation(program, "vertex_position")
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * 4 * sizeof<float>), data, BufferUsageHint.StaticDraw)
+    let n = 4 * sizeof<float>
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexPosition)
     GL.BindAttribLocation(vs, vertexPosition, "vertex_position")
-    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, 4 * sizeof<float>, 0)
+    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, n, 0)
 
     let normals =
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
     let vertexNormal = GL.GetAttribLocation(program, "vertex_normal")
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(Aabb.normalData.Length * 4 * sizeof<float32>), Aabb.normalData, BufferUsageHint.StaticDraw)
+    let n = 4 * sizeof<float32>
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(Aabb.normalData.Length * n), Aabb.normalData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexNormal)
     GL.BindAttribLocation(vs, vertexNormal, "vertex_normal")
-    GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, 4 * sizeof<float32>, 0)
+    GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, n, 0)
+
+    let color =
+      let buffer = GL.GenBuffer()
+      GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
+      buffer
+    let vertexColor = GL.GetAttribLocation(program, "vertex_color")
+    let n = 4 * sizeof<float32>
+    let colorData = [|0.1f; 0.2f; 0.1f; 0.1f|]
+    let data = Seq.collect Enumerable.Repeat [ colorData, data.Length ] |> Seq.concat |> Array.ofSeq
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
+    GL.EnableVertexAttribArray(vertexColor)
+    GL.BindAttribLocation(vs, vertexColor, "vertex_color")
+    GL.VertexAttribPointer(vertexColor, 4, VertexAttribPointerType.Float, false, n, 0)
 
     let indices =
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ElementArrayBuffer, buffer)
       buffer
-    GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(Aabb.indicesData.Length * 4 * sizeof<int>), Aabb.indicesData, BufferUsageHint.StaticDraw)
+    let n = 4 * sizeof<int>
+    GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(Aabb.indicesData.Length * n), Aabb.indicesData, BufferUsageHint.StaticDraw)
 
     GL.BindVertexArray(0)
     GL.BindBuffer(BufferTarget.ArrayBuffer, 0)
     GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0)
-    GL.DisableVertexAttribArray(vertexPosition)
+    GL.DisableVertexAttribArray(vertexColor)
     GL.DisableVertexAttribArray(vertexNormal)
-    GL.DeleteBuffer(vbo)
+    GL.DisableVertexAttribArray(vertexPosition)
     GL.DeleteBuffer(normals)
     GL.DeleteBuffer(indices)
+    GL.DeleteBuffer(color)
+    GL.DeleteBuffer(vbo)
 
     vao
 
@@ -73,16 +93,17 @@ module Drawables =
       member this.destroy () =
         GL.DeleteVertexArray(vao)
 
-  type CellBounds () =
-    let cell = { min_bounds = Vector.Vector3d(-Grid.h/2.0, -Grid.h/2.0, -Grid.h/2.0);
-                 max_bounds = Vector.Vector3d( Grid.h/2.0,  Grid.h/2.0,  Grid.h/2.0) }
+  type CellBounds (cell) =
+    let mutable data = cell
     let mutable vao = 0
     let mutable vertex_mat = 0
     let mutable transform = Vector3.Zero
+    let cell_bounds = { min_bounds = Vector.Vector3d(-Grid.h/2.0, -Grid.h/2.0, -Grid.h/2.0);
+                        max_bounds = Vector.Vector3d( Grid.h/2.0,  Grid.h/2.0,  Grid.h/2.0) }
     interface IDrawable with
       member this.prepare p vs =
         vertex_mat <- GL.GetUniformLocation(p, "vertex_mat")
-        let newVao = prepare_aabb p vs (Aabb.rawData cell)
+        let newVao = prepare_aabb p vs (Aabb.rawData cell_bounds)
         vao <- newVao
       member this.render location =
         let mutable m = Matrix4.CreateTranslation(transform)
