@@ -22,12 +22,13 @@ module Grid =
           | _ -> invalidArg "Coord" "cannot compare values of different types."
 
   type Media = Air | Fluid | Solid
+
   type Cell = { pressure: float;
                 media: Media;
                 velocity: Vector3d; // from the minimal faces, not the center
-                layer: int; }
+                layer: Option<int>; }
 
-  let default_cell = { pressure = 0.0; media = Air; layer = -1; velocity = Vector3d() }
+  let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d() }
 
   let to_vector where = Vector3d(float where.x, float where.y, float where.z)
 
@@ -38,7 +39,7 @@ module Grid =
   let time_step_constant = 2.5
 
   let mutable grid = new Dictionary<Coord, Cell>()
-  let mutable markers = new List<Coord>()
+  let mutable markers: Coord list = []
 
   let add where c = grid.Add (where, c)
 
@@ -69,6 +70,6 @@ module Grid =
   let is_solid c = match c.media with Solid -> true | _ -> false
 
   let reset () =
-    let new_grid = Seq.map (fun (KeyValue(k, v)) -> (k, { v with layer = -1 })) grid
+    let new_grid = Seq.map (fun (KeyValue(k, v)) -> (k, { v with layer = None })) grid
     grid.Clear()
     Seq.iter grid.Add new_grid

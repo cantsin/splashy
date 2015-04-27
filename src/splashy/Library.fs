@@ -13,6 +13,7 @@ open OpenTK.Input
 open Vector
 open Aabb
 open Drawables
+open Grid
 open Simulator
 
 type Game() =
@@ -32,6 +33,26 @@ type Game() =
   let mutable time = 0.0f
 
   do base.VSync <- VSyncMode.On
+
+  // set up the initial simulator state and prepare the drawables.
+  let initialize () =
+
+    let bounds = new AreaBounds ()
+    drawables <- (bounds :> IDrawable) :: drawables
+
+    let N = 10
+    Simulator.generate N
+    for marker in Grid.markers do
+      // constrain to fall within the bounds... sorta.
+      let x = float32 marker.x / float32 N
+      let y = float32 marker.y / float32 N
+      let z = float32 marker.z / float32 N
+      let cell = new CellBounds ()
+      cell.set_translation (Vector3(x, y, z))
+      drawables <- (cell :> IDrawable) :: drawables
+
+    for drawable in drawables do
+      drawable.prepare program vertexShader
 
   override o.OnLoad e =
 
@@ -62,26 +83,13 @@ type Game() =
     modelViewLocation <- GL.GetUniformLocation(program, "modelViewMatrix")
     vertexLocation <- GL.GetUniformLocation(program, "vertex_mat")
 
-    let bounds = new BoundingArea ()
-    drawables <- (bounds :> IDrawable) :: drawables
-    let r = System.Random()
-    for i in 0..9 do
-      let cell = new Cell ()
-      let x = (float32 (r.Next(-i, i))) / 10.0f
-      let y = (float32 (r.Next(-i, i))) / 10.0f
-      let z = (float32 (r.Next(-i, i))) / 10.0f
-      cell.set_translation (Vector3(x, y, z))
-      drawables <- (cell :> IDrawable) :: drawables
-
-    // initialize.
-    for drawable in drawables do
-      drawable.prepare program vertexShader
-
     // set other GL states.
     GL.Enable(EnableCap.DepthTest)
     GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One);
     GL.Enable(EnableCap.Blend);
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
+
+    initialize ()
 
     base.OnLoad e
 

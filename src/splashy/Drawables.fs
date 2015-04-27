@@ -59,7 +59,7 @@ module Drawables =
 
     vao
 
-  type BoundingArea () =
+  type AreaBounds () =
     let mutable vao = 0
     let mutable position = Matrix4.Identity
     interface IDrawable with
@@ -73,7 +73,7 @@ module Drawables =
       member this.destroy () =
         GL.DeleteVertexArray(vao)
 
-  type Cell () =
+  type CellBounds () =
     let cell = { min_bounds = Vector.Vector3d(-Grid.h/2.0, -Grid.h/2.0, -Grid.h/2.0);
                  max_bounds = Vector.Vector3d( Grid.h/2.0,  Grid.h/2.0,  Grid.h/2.0) }
     let mutable vao = 0
