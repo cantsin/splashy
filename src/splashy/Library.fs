@@ -141,7 +141,7 @@ type Splashy() =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
     time <- time + (float32)e.Time
-    let rot = Matrix4.RotateY(time)
+    let rot = Matrix4.CreateRotationY(time)
     let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
