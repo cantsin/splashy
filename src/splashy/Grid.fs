@@ -66,7 +66,8 @@ module Grid =
   let filter_values fn =
     let result = Seq.filter (fun (KeyValue(k, v)) -> fn v) grid
     let keys = Seq.map (fun (KeyValue(k, v)) -> k) result
-    // make a copy; we want to avoid writing to the dictionary while iterating over it.
+    // make a copy; we want to avoid writing to the dictionary while
+    // potentially iterating over it.
     new List<Coord> (keys)
 
   let is_solid c = match c.media with Solid -> true | _ -> false
@@ -74,3 +75,52 @@ module Grid =
   let reset () =
     let keys = filter_values (fun _ -> true)
     Seq.iter (fun k -> set k { grid.[k] with layer = None }) keys
+
+  let internal get_velocity_index where index =
+    match grid.ContainsKey where with
+      | true ->
+        match index with
+          | 0 -> Some grid.[where].velocity.x
+          | 1 -> Some grid.[where].velocity.y
+          | 2 -> Some grid.[where].velocity.z
+          | _ -> failwith "No such index."
+      | _ -> None
+
+  let internal interpolate x y z index =
+    let i = floor x
+    let j = floor y
+    let k = floor z
+    let ii = int i
+    let jj = int j
+    let kk = int k
+    let id = [i + 1.0 - x; x - i]
+    let jd = [j + 1.0 - y; y - j]
+    let kd = [k + 1.0 - z; z - k]
+    // trilinear interpolation
+    let sums = [for x' in 0..1 do
+                for y' in 0..1 do
+                for z' in 0..1 do
+                let c = { x = ii + x'; y = jj + y'; z = kk + z' }
+                match get_velocity_index c index with
+                  | Some v -> yield (v * id.[x'] * jd.[y'] * kd.[z'])
+                  | None -> yield 0.0]
+    Seq.sum sums
+
+  let internal get_velocity x y z =
+    let xh = float x / h
+    let yh = float y / h
+    let zh = float z / h
+    let x = interpolate xh (yh - 0.5) (zh - 0.5) 0
+    let y = interpolate (xh - 0.5) yh (zh - 0.5) 1
+    let z = interpolate (xh - 0.5) (yh - 0.5) zh 2
+    Vector3d(x, y, z)
+
+  let trace (c: Coord) t =
+    // runge kutta order two interpolation
+    let cv = c.to_vector ()
+    let v = get_velocity cv.x cv.y cv.z
+    let x = cv.x + 0.5 * t * v.x
+    let y = cv.y + 0.5 * t * v.y
+    let z = cv.z + 0.5 * t * v.z
+    let dv = Vector3d(x, y, z)
+    cv .+ (dv .* t)

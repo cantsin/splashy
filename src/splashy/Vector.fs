@@ -22,6 +22,7 @@ module Vector =
       static member max (v1: Vector3d) (v2: Vector3d) = Vector3d(max v1.x v2.x,
                                                                  max v1.y v2.y,
                                                                  max v1.z v2.z)
+      override this.ToString () = sprintf "[%f; %f; %f]" this.x this.y this.z
     end
 
   // partial derivatives

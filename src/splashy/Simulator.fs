@@ -11,7 +11,7 @@ module Simulator =
   let max_velocity = 100.0 // for now
 
   // pre-calculated.
-  let get_time_step = Grid.time_step_constant * Grid.h / max_velocity
+  let time_step = Grid.time_step_constant * Grid.h / max_velocity
 
   let h = 100.0
   let bounds = { min_bounds = Vector3d(-h, -h, -h);
@@ -55,12 +55,18 @@ module Simulator =
     let leftover = Grid.filter_values (fun c -> c.layer = None)
     Seq.iter Grid.delete leftover
 
+  let convection () =
+    Seq.iter (fun m ->
+      let new_velocity = trace m time_step
+      printfn "%A" new_velocity) markers
+
   let advance () =
     printfn "Moving simulation forward."
     Grid.reset ()
     update_fluid_markers ()
     create_air_buffer ()
     excise_unused_grid_cells ()
+    convection ()
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
