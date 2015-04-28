@@ -120,4 +120,5 @@ module Grid =
     let z = cv.z + 0.5 * t * v.z
     let dv = get_velocity x y z
     let p = cv .+ (dv .* t)
-    { x = int p.x; y = int p.y; z = int p.z }
+    let to_int x = round x |> int
+    { x = to_int p.x; y = to_int p.y; z = to_int p.z }
