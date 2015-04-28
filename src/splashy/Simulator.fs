@@ -44,7 +44,7 @@ module Simulator =
                       Grid.set where { c with media = Air; layer = Some(i) }
                   | None ->
                       if Aabb.contains bounds (where.to_vector ()) then
-                        Grid.add where { Grid.default_cell with media = Fluid; layer = Some(i) }
+                        Grid.add where { Grid.default_cell with media = Air; layer = Some(i) }
                       else
                         Grid.add where { Grid.default_cell with media = Solid; layer = Some(i) }
                   | _ -> ()

@@ -97,9 +97,9 @@ module Drawables =
     let mutable data = cell
     let mutable vao = 0
     let mutable transform = Vector3.Zero
-    let fluid_color = [|0.2f; 0.2f; 0.8f; 0.3f|]
-    let solid_color = [|0.64f; 0.16f; 0.16f; 0.3f|]
-    let air_color = [|1.0f; 1.0f; 1.0f; 0.1f|]
+    let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
+    let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
+    let air_color = [|1.0f; 1.0f; 1.0f; 0.01f|]
     let cell_bounds = { min_bounds = Vector.Vector3d(-Grid.h/2.0, -Grid.h/2.0, -Grid.h/2.0);
                         max_bounds = Vector.Vector3d( Grid.h/2.0,  Grid.h/2.0,  Grid.h/2.0) }
     interface IDrawable with
