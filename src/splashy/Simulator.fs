@@ -19,7 +19,16 @@ module Simulator =
 
   let mutable markers: Coord list = []
 
-  // synchronize fluid markers with the grid
+  // reset grid layers.
+  let reset_layers () =
+    let coords = Grid.filter_values (fun _ -> true)
+    Seq.iter (fun m ->
+              match Grid.get m with
+                | Some c -> Grid.set m { c with layer = None }
+                | _ -> failwith "Could not get/set grid cell."
+              ) coords
+
+  // synchronize fluid markers with the grid.
   let update_fluid_markers () =
     Seq.iter (fun m ->
               match Grid.get m with
@@ -31,7 +40,7 @@ module Simulator =
                 | _ -> ()
               ) markers
 
-  // create air buffer zones around the fluid
+  // create air buffer zones around the fluid.
   let create_air_buffer () =
     let max_distance = max 2 (int (ceil Grid.time_step_constant))
     for i in 1..max_distance do
@@ -55,14 +64,18 @@ module Simulator =
     let leftover = Grid.filter_values (fun c -> c.layer = None)
     Seq.iter Grid.delete leftover
 
+  // convection by means of a backwards particle trace.
   let convection () =
-    Seq.iter (fun m ->
-      let new_velocity = trace m time_step
-      printfn "%A" new_velocity) markers
+    let new_positions = Seq.map (fun m -> trace m time_step) markers
+    Seq.iter2 (fun m np ->
+               match Grid.get m, Grid.get np with
+                 | Some(c1), Some(c2) -> Grid.set m { c1 with velocity = c2.velocity }
+                 | _ -> failwith "backwards particle trace went too far."
+               ) markers new_positions
 
   let advance () =
-    printfn "Moving simulation forward."
-    Grid.reset ()
+    printfn "Moving simulation forward with time step %A." time_step
+    reset_layers ()
     update_fluid_markers ()
     create_air_buffer ()
     excise_unused_grid_cells ()

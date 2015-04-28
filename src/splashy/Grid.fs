@@ -72,10 +72,6 @@ module Grid =
 
   let is_solid c = match c.media with Solid -> true | _ -> false
 
-  let reset () =
-    let keys = filter_values (fun _ -> true)
-    Seq.iter (fun k -> set k { grid.[k] with layer = None }) keys
-
   let internal get_velocity_index where index =
     match grid.ContainsKey where with
       | true ->
@@ -93,9 +89,9 @@ module Grid =
     let ii = int i
     let jj = int j
     let kk = int k
-    let id = [i + 1.0 - x; x - i]
-    let jd = [j + 1.0 - y; y - j]
-    let kd = [k + 1.0 - z; z - k]
+    let id = [i - x + 1.0; x - i]
+    let jd = [j - y + 1.0; y - j]
+    let kd = [k - z + 1.0; z - k]
     // trilinear interpolation
     let sums = [for x' in 0..1 do
                 for y' in 0..1 do
@@ -122,5 +118,6 @@ module Grid =
     let x = cv.x + 0.5 * t * v.x
     let y = cv.y + 0.5 * t * v.y
     let z = cv.z + 0.5 * t * v.z
-    let dv = Vector3d(x, y, z)
-    cv .+ (dv .* t)
+    let dv = get_velocity x y z
+    let p = cv .+ (dv .* t)
+    { x = int p.x; y = int p.y; z = int p.z }
