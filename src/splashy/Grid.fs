@@ -12,6 +12,8 @@ module Grid =
   [<Literal>]
   let time_step_constant = 2.5
 
+  type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
+
   [<CustomEquality;CustomComparison>]
   type Coord =
     { x: int; y: int; z: int }
@@ -30,12 +32,22 @@ module Grid =
       Vector3d(float this.x, float this.y, float this.z)
     member this.neighbors () =
       let h = int h
-      [| { this with x = this.x + h };
-         { this with x = this.x - h };
-         { this with y = this.y + h };
-         { this with y = this.y - h };
-         { this with z = this.z + h };
-         { this with z = this.z - h }; |]
+      [| PosX, { this with x = this.x + h };
+         NegX, { this with x = this.x - h };
+         PosY, { this with y = this.y + h };
+         NegY, { this with y = this.y - h };
+         PosZ, { this with z = this.z + h };
+         NegZ, { this with z = this.z - h }; |]
+
+  let internal is_bordering d (v: Vector3d) =
+    match d with
+      | NegX when v.x < 0.0 -> true
+      | PosX when v.x > 0.0 -> true
+      | NegY when v.y < 0.0 -> true
+      | PosY when v.y > 0.0 -> true
+      | NegZ when v.z < 0.0 -> true
+      | PosZ when v.z > 0.0 -> true
+      | _ -> false
 
   type Media = Air | Fluid | Solid
 
@@ -75,11 +87,15 @@ module Grid =
   let internal get_velocity_index where index =
     match grid.ContainsKey where with
       | true ->
-        match index with
-          | 0 -> Some grid.[where].velocity.x
-          | 1 -> Some grid.[where].velocity.y
-          | 2 -> Some grid.[where].velocity.z
-          | _ -> failwith "No such index."
+        let c = grid.[where]
+        if c.media <> Solid then
+          match index with
+            | 0 -> Some c.velocity.x
+            | 1 -> Some c.velocity.y
+            | 2 -> Some c.velocity.z
+            | _ -> failwith "No such index."
+        else
+          None
       | _ -> None
 
   let internal interpolate x y z index =

@@ -49,7 +49,7 @@ module Simulator =
       let current_layer = Some (i - 1)
       let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
       let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) current
-      Seq.iter (fun where ->
+      Seq.iter (fun (_, where) ->
                 match Grid.get where with
                   | Some c when not (Grid.is_solid c) && c.layer = None ->
                       Grid.set where { c with media = Air; layer = Some i }
@@ -75,13 +75,15 @@ module Simulator =
                  | _ -> failwith "backwards particle trace went too far."
                ) markers new_positions
 
-  // apply external forces such as gravity.
+  // apply external forces such as gravity to bordering fluid cells.
   let apply_external_forces () =
     let v = gravity .* time_step
     Seq.iter (fun (m: Coord) ->
-              for neighbor in m.neighbors () do
+              for direction, neighbor in m.neighbors () do
                 match Grid.get neighbor with
-                  | Some c -> Grid.set neighbor { c with velocity = c.velocity .+ v }
+                  | Some c ->
+                    if c.media = Fluid && Grid.is_bordering direction v then
+                      Grid.set neighbor { c with velocity = c.velocity .+ v }
                   | None -> failwith "Could not get neighbor."
               ) markers
 
