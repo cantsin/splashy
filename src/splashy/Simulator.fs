@@ -87,14 +87,25 @@ module Simulator =
                   | None -> failwith "Could not get neighbor."
               ) markers
 
+  // apply viscosity by evaluating the lapalacian on bordering fluid cells.
+  let viscosity () =
+    let velocities = Seq.map laplacian markers
+    Seq.iter2 (fun m velocity ->
+               match Grid.get m with
+                 | Some c -> Grid.set m { c with velocity = c.velocity .+ (velocity .* time_step) }
+                 | None -> failwith "Marker did not have grid."
+               ) markers velocities
+
   let advance () =
     printfn "Moving simulation forward with time step %A." time_step
     reset_layers ()
     update_fluid_markers ()
     create_air_buffer ()
     excise_unused_grid_cells ()
+    // only for components that border fluid cells
     convection ()
     apply_external_forces ()
+    viscosity ()
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =

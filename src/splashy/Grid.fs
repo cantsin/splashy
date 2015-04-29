@@ -118,7 +118,7 @@ module Grid =
                   | None -> yield 0.0]
     Seq.sum sums
 
-  let internal get_velocity x y z =
+  let internal get_interpolated_velocity x y z =
     let xh = float x / h
     let yh = float y / h
     let zh = float z / h
@@ -130,11 +130,26 @@ module Grid =
   let trace (c: Coord) t =
     // runge kutta order two interpolation
     let cv = c.to_vector ()
-    let v = get_velocity cv.x cv.y cv.z
+    let v = get_interpolated_velocity cv.x cv.y cv.z
     let x = cv.x + 0.5 * t * v.x
     let y = cv.y + 0.5 * t * v.y
     let z = cv.z + 0.5 * t * v.z
-    let dv = get_velocity x y z
+    let dv = get_interpolated_velocity x y z
     let p = cv .+ (dv .* t)
     let to_int x = round x |> int
     { x = to_int p.x; y = to_int p.y; z = to_int p.z }
+
+  let get_shared_velocity d n =
+    match get n with
+      | Some cell when cell.media = Fluid && is_bordering d cell.velocity ->
+        cell.velocity
+      | _ ->
+        Vector3d()
+
+  let laplacian (where: Coord) =
+    let neighbors = where.neighbors ()
+    let where_v = match get where with
+                    | Some c -> c.velocity .* 6.0
+                    | None -> Vector3d()
+    let v = Seq.fold (fun accum (d, n) -> accum .+ get_shared_velocity d n) (Vector3d()) neighbors
+    v .- where_v
