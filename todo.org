@@ -1,9 +1,11 @@
-* simulation [0/2]
-** TODO backwards particle trace
-** TODO runge kutta order 2 interpolation
-* graphics [0/2]
+* simulation [2/2]
+** DONE backwards particle trace
+** DONE runge kutta order 2 interpolation
+** TODO viscosity
+** TODO pressure
+* graphics [1/2]
 ** TODO implement camera
-** TODO transparency?
+** DONE transparency?
 * simulation [0/1]
 ** TODO look at Microsoft.FSharp.Math (sparse matrix solver?)
 - http://tomasp.net/blog/powerpack-matrix.aspx/
