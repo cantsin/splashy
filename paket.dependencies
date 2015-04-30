@@ -7,5 +7,6 @@ nuget NUnit.Runners
 nuget FAKE
 nuget SourceLink.Fake
 nuget OpenTK
+nuget MathNet.Numerics.FSharp
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
