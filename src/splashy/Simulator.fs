@@ -2,6 +2,7 @@ namespace splashy
 
 open Vector
 open Aabb
+open Coord
 open Grid
 
 module Simulator =
@@ -9,18 +10,19 @@ module Simulator =
   // configuration options.
   [<Literal>]
   let max_velocity = 100.0 // for now
+  [<Literal>]
   let viscosity = 0.894
-
   let gravity = Vector3d(0.0, -9.81, 0.0) // m/s^2
 
   [<Literal>]
   let time_step_constant = 2.5
   // pre-calculated.
-  let time_step = time_step_constant * Grid.h / max_velocity
+  let time_step = time_step_constant * Coord.h / max_velocity
 
-  let h = 100.0
-  let bounds = { min_bounds = Vector3d(-h, -h, -h);
-                 max_bounds = Vector3d( h,  h,  h) }
+  // for now.
+  let bounds_h = 100.0
+  let bounds = { min_bounds = Vector3d(-bounds_h, -bounds_h, -bounds_h);
+                 max_bounds = Vector3d( bounds_h,  bounds_h,  bounds_h) }
 
   let mutable markers: Coord list = []
 
@@ -61,22 +63,22 @@ module Simulator =
     Seq.iter2 (fun m np ->
                match Grid.get m, Grid.get np with
                  | Some c1, Some c2 -> Grid.set m { c1 with velocity = c2.velocity }
-                 | _ -> failwith "backwards particle trace went too far."
+                 | _ -> failwith "Backwards particle trace went too far."
                ) markers new_positions
 
-  // apply external forces such as gravity to bordering fluid cells.
+  // gravity only (for now).
   let apply_forces () =
     let v = gravity .* time_step
     Seq.iter (fun (m: Coord) ->
               for direction, neighbor in m.neighbors () do
                 match Grid.get neighbor with
                   | Some c ->
-                    if c.media = Fluid && Grid.is_bordering direction v then
+                    if c.media = Fluid && Coord.is_bordering direction v then
                       Grid.set neighbor { c with velocity = c.velocity .+ v }
                   | None -> failwith "Could not get neighbor."
               ) markers
 
-  // apply viscosity by evaluating the lapalacian on bordering fluid cells.
+  // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity () =
     let v = viscosity * time_step
     let velocities = Seq.map laplacian markers

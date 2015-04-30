@@ -3,49 +3,9 @@ namespace splashy
 open System.Collections.Generic
 
 open Vector
+open Coord
 
 module Grid =
-
-  // configuration options.
-  [<Literal>]
-  let h = 10.0
-
-  type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
-
-  [<CustomEquality;CustomComparison>]
-  type Coord =
-    { x: int; y: int; z: int }
-    override this.GetHashCode () =
-      541 * this.x + 79 * this.y + 31 * this.z
-    override this.Equals that =
-      match that with
-        | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
-        | _ -> false
-    interface System.IComparable with
-      member this.CompareTo that =
-        match that with
-          | :? Coord as c -> compare this c
-          | _ -> invalidArg "Coord" "cannot compare values of different types."
-    member this.to_vector () =
-      Vector3d(float this.x, float this.y, float this.z)
-    member this.neighbors () =
-      let h = int h
-      [| PosX, { this with x = this.x + h };
-         NegX, { this with x = this.x - h };
-         PosY, { this with y = this.y + h };
-         NegY, { this with y = this.y - h };
-         PosZ, { this with z = this.z + h };
-         NegZ, { this with z = this.z - h }; |]
-
-  let internal is_bordering d (v: Vector3d) =
-    match d with
-      | NegX when v.x < 0.0 -> true
-      | PosX when v.x > 0.0 -> true
-      | NegY when v.y < 0.0 -> true
-      | PosY when v.y > 0.0 -> true
-      | NegZ when v.z < 0.0 -> true
-      | PosZ when v.z > 0.0 -> true
-      | _ -> false
 
   type Media = Air | Fluid | Solid
 
@@ -132,9 +92,9 @@ module Grid =
     Seq.sum sums
 
   let internal get_interpolated_velocity x y z =
-    let xh = float x / h
-    let yh = float y / h
-    let zh = float z / h
+    let xh = float x / Coord.h
+    let yh = float y / Coord.h
+    let zh = float z / Coord.h
     let x = interpolate xh (yh - 0.5) (zh - 0.5) 0
     let y = interpolate (xh - 0.5) yh (zh - 0.5) 1
     let z = interpolate (xh - 0.5) (yh - 0.5) zh 2
@@ -152,10 +112,10 @@ module Grid =
     let to_int x = round x |> int
     { x = to_int p.x; y = to_int p.y; z = to_int p.z }
 
-  let get_shared_velocity d n =
+  let internal get_shared_velocity d n =
     match get n with
-      | Some cell when cell.media = Fluid && is_bordering d cell.velocity ->
-        cell.velocity
+      | Some c when c.media = Fluid && is_bordering d c.velocity ->
+        c.velocity
       | _ ->
         Vector3d()
 

@@ -7,6 +7,7 @@ open OpenTK.Graphics
 open OpenTK.Graphics.OpenGL
 
 open Aabb
+open Coord
 open Grid
 open Simulator
 
@@ -100,8 +101,8 @@ module Drawables =
     let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
     let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
     let air_color = [|1.0f; 1.0f; 1.0f; 0.01f|]
-    let cell_bounds = { min_bounds = Vector.Vector3d(-Grid.h/2.0, -Grid.h/2.0, -Grid.h/2.0);
-                        max_bounds = Vector.Vector3d( Grid.h/2.0,  Grid.h/2.0,  Grid.h/2.0) }
+    let cell_bounds = { min_bounds = Vector.Vector3d(-Coord.h/2.0, -Coord.h/2.0, -Coord.h/2.0);
+                        max_bounds = Vector.Vector3d( Coord.h/2.0,  Coord.h/2.0,  Coord.h/2.0) }
     interface IDrawable with
       member this.prepare p vs =
         let color = match cell.media with
