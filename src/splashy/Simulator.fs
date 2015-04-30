@@ -9,11 +9,14 @@ module Simulator =
   // configuration options.
   [<Literal>]
   let max_velocity = 100.0 // for now
+  let viscosity = 0.894
 
   let gravity = Vector3d(0.0, -9.81, 0.0) // m/s^2
 
+  [<Literal>]
+  let time_step_constant = 2.5
   // pre-calculated.
-  let time_step = Grid.time_step_constant * Grid.h / max_velocity
+  let time_step = time_step_constant * Grid.h / max_velocity
 
   let h = 100.0
   let bounds = { min_bounds = Vector3d(-h, -h, -h);
@@ -21,16 +24,7 @@ module Simulator =
 
   let mutable markers: Coord list = []
 
-  // reset grid layers.
-  let reset_layers () =
-    let coords = Grid.filter_values (fun _ -> true)
-    Seq.iter (fun m ->
-              match Grid.get m with
-                | Some c -> Grid.set m { c with layer = None }
-                | _ -> failwith "Could not get/set grid cell."
-              ) coords
-
-  // synchronize fluid markers with the grid.
+  // synchronize our fluid markers with the grid.
   let update_fluid_markers () =
     Seq.iter (fun m ->
               match Grid.get m with
@@ -42,9 +36,9 @@ module Simulator =
                 | _ -> ()
               ) markers
 
-  // create air buffer zones around the fluid.
+  // create air buffer zones around the fluid markers.
   let create_air_buffer () =
-    let max_distance = max 2 (int (ceil Grid.time_step_constant))
+    let max_distance = max 2 (int (ceil time_step_constant))
     for i in 1..max_distance do
       let current_layer = Some (i - 1)
       let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
@@ -61,13 +55,8 @@ module Simulator =
                   | _ -> ()
                 ) all_neighbors
 
-  // delete any leftover cells.
-  let excise_unused_grid_cells () =
-    let leftover = Grid.filter_values (fun c -> c.layer = None)
-    Seq.iter Grid.delete leftover
-
   // convection by means of a backwards particle trace.
-  let convection () =
+  let apply_convection () =
     let new_positions = Seq.map (fun m -> trace m time_step) markers
     Seq.iter2 (fun m np ->
                match Grid.get m, Grid.get np with
@@ -76,7 +65,7 @@ module Simulator =
                ) markers new_positions
 
   // apply external forces such as gravity to bordering fluid cells.
-  let apply_external_forces () =
+  let apply_forces () =
     let v = gravity .* time_step
     Seq.iter (fun (m: Coord) ->
               for direction, neighbor in m.neighbors () do
@@ -88,24 +77,24 @@ module Simulator =
               ) markers
 
   // apply viscosity by evaluating the lapalacian on bordering fluid cells.
-  let viscosity () =
+  let apply_viscosity () =
+    let v = viscosity * time_step
     let velocities = Seq.map laplacian markers
     Seq.iter2 (fun m velocity ->
                match Grid.get m with
-                 | Some c -> Grid.set m { c with velocity = c.velocity .+ (velocity .* time_step) }
+                 | Some c -> Grid.set m { c with velocity = c.velocity .+ (velocity .* v) }
                  | None -> failwith "Marker did not have grid."
                ) markers velocities
 
   let advance () =
     printfn "Moving simulation forward with time step %A." time_step
-    reset_layers ()
-    update_fluid_markers ()
-    create_air_buffer ()
-    excise_unused_grid_cells ()
-    // only for components that border fluid cells
-    convection ()
-    apply_external_forces ()
-    viscosity ()
+    Grid.setup (fun () ->
+      update_fluid_markers ()
+      create_air_buffer ()
+    )
+    apply_convection () // -(∇⋅u)u
+    apply_forces ()     // F
+    apply_viscosity ()  // v∇²u
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =

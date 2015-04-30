@@ -9,8 +9,6 @@ module Grid =
   // configuration options.
   [<Literal>]
   let h = 10.0
-  [<Literal>]
-  let time_step_constant = 2.5
 
   type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
 
@@ -83,6 +81,21 @@ module Grid =
     new List<Coord> (keys)
 
   let is_solid c = match c.media with Solid -> true | _ -> false
+
+  let setup fn =
+    try
+      // reset grid layers.
+      let coords = filter_values (fun _ -> true)
+      Seq.iter (fun m ->
+                match get m with
+                  | Some c -> set m { c with layer = None }
+                  | _ -> failwith "Could not get/set grid cell."
+                ) coords
+      fn ()
+    finally
+      // get rid of unused cells.
+      let leftover = filter_values (fun c -> c.layer = None)
+      Seq.iter delete leftover
 
   let internal get_velocity_index where index =
     match grid.ContainsKey where with

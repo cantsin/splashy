@@ -1,7 +1,7 @@
-* simulation [2/2]
+* simulation [3/4]
 ** DONE backwards particle trace
 ** DONE runge kutta order 2 interpolation
-** TODO viscosity
+** DONE viscosity
 ** TODO pressure
 * graphics [1/2]
 ** TODO implement camera
