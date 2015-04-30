@@ -31,8 +31,7 @@ module Grid =
   let set where c =
     match get where with
       | None -> failwith "Tried to set non-existent cell."
-      | _ ->
-        grid.[where] <- c
+      | _ -> grid.[where] <- c
 
   let filter_values fn =
     let result = Seq.filter (fun (KeyValue(k, v)) -> fn v) grid
@@ -59,17 +58,13 @@ module Grid =
       Seq.iter delete leftover
 
   let internal get_velocity_index where index =
-    match grid.ContainsKey where with
-      | true ->
-        let c = grid.[where]
-        if c.media <> Solid then
-          match index with
-            | 0 -> Some c.velocity.x
-            | 1 -> Some c.velocity.y
-            | 2 -> Some c.velocity.z
-            | _ -> failwith "No such index."
-        else
-          None
+    match get where with
+      | Some c when is_solid c ->
+        match index with
+          | 0 -> Some c.velocity.x
+          | 1 -> Some c.velocity.y
+          | 2 -> Some c.velocity.z
+          | _ -> failwith "No such index."
       | _ -> None
 
   let internal interpolate x y z index =

@@ -1,5 +1,7 @@
 namespace splashy
 
+open System.Collections.Generic
+
 open Constants
 open Vector
 open Aabb
@@ -72,6 +74,33 @@ module Simulator =
                  | None -> failwith "Marker did not have grid."
                ) markers velocities
 
+  let apply_pressure () =
+    let n = Seq.length markers
+    let lookups = Seq.zip markers { 0..n } |> dict
+    let coefficients (c: Coord) =
+      let neighbors = c.neighbors ()
+      // return a 1 for every bordering liquid marker
+      let singulars = Seq.fold (fun accum (_, n) ->
+                                if lookups.ContainsKey n then
+                                  (lookups.[n], 1.0) :: accum
+                                else
+                                  accum
+                                ) [] neighbors
+      // return -N for this marker, where N is number of non solid neighbors.
+      let N = Seq.filter (fun (_, n) ->
+                          match Grid.get n with
+                            | Some c -> not (Grid.is_solid c)
+                            | None -> false) neighbors
+                          |> Seq.length
+      (lookups.[c], - float N) :: singulars
+    // construct a sparse matrix of coefficients.
+    let m = Array.map (fun m ->
+                       let r = Array.init n (fun _ -> 0.0)
+                       for (n, c) in coefficients m do
+                         r.[n] <- c
+                       r) (Array.ofList markers)
+    printfn "%A" m
+
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
     Grid.setup (fun () ->
@@ -81,6 +110,7 @@ module Simulator =
     apply_convection () // -(∇⋅u)u
     apply_forces ()     // F
     apply_viscosity ()  // v∇²u
+    apply_pressure()    // -1/ρ∇p
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
