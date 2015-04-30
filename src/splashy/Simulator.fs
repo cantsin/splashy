@@ -1,5 +1,7 @@
 namespace splashy
 
+open MathNet.Numerics.LinearAlgebra
+
 open System.Collections.Generic
 
 open Constants
@@ -26,7 +28,7 @@ module Simulator =
 
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
-    let max_distance = max 2 (int (ceil Constants.time_step_constant))
+    let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
     for i in 1..max_distance do
       let current_layer = Some (i - 1)
       let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
@@ -66,20 +68,21 @@ module Simulator =
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity () =
-    let v = Constants.viscosity * Constants.time_step
-    let velocities = Seq.map laplacian markers
+    let v = Constants.fluid_viscosity * Constants.time_step
+    let velocities = Seq.map Grid.laplacian markers
     Seq.iter2 (fun m velocity ->
                match Grid.get m with
                  | Some c -> Grid.set m { c with velocity = c.velocity .+ (velocity .* v) }
                  | None -> failwith "Marker did not have grid."
                ) markers velocities
 
+  // set the pressure such that the divergence throughout the fluid is zero.
   let apply_pressure () =
     let n = Seq.length markers
     let lookups = Seq.zip markers { 0..n } |> dict
     let coefficients (c: Coord) =
       let neighbors = c.neighbors ()
-      // return a 1 for every bordering liquid marker
+      // return a 1 for every bordering liquid marker.
       let singulars = Seq.fold (fun accum (_, n) ->
                                 if lookups.ContainsKey n then
                                   (lookups.[n], 1.0) :: accum
@@ -94,11 +97,10 @@ module Simulator =
                           |> Seq.length
       (lookups.[c], - float N) :: singulars
     // construct a sparse matrix of coefficients.
-    let m = Array.map (fun m ->
-                       let r = Array.init n (fun _ -> 0.0)
-                       for (n, c) in coefficients m do
-                         r.[n] <- c
-                       r) (Array.ofList markers)
+    let mutable m = SparseMatrix.zero<float> n n
+    for KeyValue(marker, c) in lookups do
+      for (r, value) in coefficients marker do
+        m.[r, c] <- value
     printfn "%A" m
 
   let advance () =
