@@ -1,11 +1,9 @@
 namespace splashy
 
+open Constants
 open Vector
 
 module Coord =
-  // configuration options.
-  [<Literal>]
-  let h = 10.0
 
   type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
 
@@ -26,7 +24,7 @@ module Coord =
     member this.to_vector () =
       Vector3d(float this.x, float this.y, float this.z)
     member this.neighbors () =
-      let h = int h
+      let h = int Constants.h
       [| PosX, { this with x = this.x + h };
          NegX, { this with x = this.x - h };
          PosY, { this with y = this.y + h };

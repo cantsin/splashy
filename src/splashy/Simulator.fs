@@ -1,28 +1,12 @@
 namespace splashy
 
+open Constants
 open Vector
 open Aabb
 open Coord
 open Grid
 
 module Simulator =
-
-  // configuration options.
-  [<Literal>]
-  let max_velocity = 100.0 // for now
-  [<Literal>]
-  let viscosity = 0.894
-  let gravity = Vector3d(0.0, -9.81, 0.0) // m/s^2
-
-  [<Literal>]
-  let time_step_constant = 2.5
-  // pre-calculated.
-  let time_step = time_step_constant * Coord.h / max_velocity
-
-  // for now.
-  let bounds_h = 100.0
-  let bounds = { min_bounds = Vector3d(-bounds_h, -bounds_h, -bounds_h);
-                 max_bounds = Vector3d( bounds_h,  bounds_h,  bounds_h) }
 
   let mutable markers: Coord list = []
 
@@ -33,14 +17,14 @@ module Simulator =
                 | Some c when not (Grid.is_solid c) ->
                     Grid.set m { c with media = Fluid; layer = Some 0; }
                 | None ->
-                    if Aabb.contains bounds (m.to_vector ()) then
+                    if Aabb.contains Constants.bounds (m.to_vector ()) then
                       Grid.add m { Grid.default_cell with media = Fluid; layer = Some 0; }
                 | _ -> ()
               ) markers
 
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
-    let max_distance = max 2 (int (ceil time_step_constant))
+    let max_distance = max 2 (int (ceil Constants.time_step_constant))
     for i in 1..max_distance do
       let current_layer = Some (i - 1)
       let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
@@ -50,7 +34,7 @@ module Simulator =
                   | Some c when not (Grid.is_solid c) && c.layer = None ->
                       Grid.set where { c with media = Air; layer = Some i }
                   | None ->
-                      if Aabb.contains bounds (where.to_vector ()) then
+                      if Aabb.contains Constants.bounds (where.to_vector ()) then
                         Grid.add where { Grid.default_cell with media = Air; layer = Some i }
                       else
                         Grid.add where { Grid.default_cell with media = Solid; layer = Some i }
@@ -59,7 +43,7 @@ module Simulator =
 
   // convection by means of a backwards particle trace.
   let apply_convection () =
-    let new_positions = Seq.map (fun m -> trace m time_step) markers
+    let new_positions = Seq.map (fun m -> trace m Constants.time_step) markers
     Seq.iter2 (fun m np ->
                match Grid.get m, Grid.get np with
                  | Some c1, Some c2 -> Grid.set m { c1 with velocity = c2.velocity }
@@ -68,7 +52,7 @@ module Simulator =
 
   // gravity only (for now).
   let apply_forces () =
-    let v = gravity .* time_step
+    let v = Constants.gravity .* Constants.time_step
     Seq.iter (fun (m: Coord) ->
               for direction, neighbor in m.neighbors () do
                 match Grid.get neighbor with
@@ -80,7 +64,7 @@ module Simulator =
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity () =
-    let v = viscosity * time_step
+    let v = Constants.viscosity * Constants.time_step
     let velocities = Seq.map laplacian markers
     Seq.iter2 (fun m velocity ->
                match Grid.get m with
@@ -89,7 +73,7 @@ module Simulator =
                ) markers velocities
 
   let advance () =
-    printfn "Moving simulation forward with time step %A." time_step
+    printfn "Moving simulation forward with time step %A." Constants.time_step
     Grid.setup (fun () ->
       update_fluid_markers ()
       create_air_buffer ()
@@ -101,7 +85,7 @@ module Simulator =
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
     let r = System.Random()
-    let l = int h
+    let l = int Constants.h
     markers <- [ for _ in 0..n-1 do
                  let x = r.Next(-l, l)
                  let y = r.Next(-l, l)

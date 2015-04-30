@@ -2,6 +2,7 @@ namespace splashy
 
 open System.Collections.Generic
 
+open Constants
 open Vector
 open Coord
 
@@ -92,9 +93,9 @@ module Grid =
     Seq.sum sums
 
   let internal get_interpolated_velocity x y z =
-    let xh = float x / Coord.h
-    let yh = float y / Coord.h
-    let zh = float z / Coord.h
+    let xh = float x / Constants.h
+    let yh = float y / Constants.h
+    let zh = float z / Constants.h
     let x = interpolate xh (yh - 0.5) (zh - 0.5) 0
     let y = interpolate (xh - 0.5) yh (zh - 0.5) 1
     let z = interpolate (xh - 0.5) (yh - 0.5) zh 2

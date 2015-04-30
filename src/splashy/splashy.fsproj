@@ -64,6 +64,7 @@
     <Compile Include="Vector.fs" />
     <Compile Include="Quad.fs" />
     <Compile Include="Aabb.fs" />
+    <Compile Include="Constants.fs" />
     <Compile Include="Coord.fs" />
     <Compile Include="Grid.fs" />
     <Compile Include="Simulator.fs" />

@@ -6,6 +6,7 @@ open OpenTK
 open OpenTK.Graphics
 open OpenTK.Graphics.OpenGL
 
+open Constants
 open Aabb
 open Coord
 open Grid
@@ -85,7 +86,7 @@ module Drawables =
     let color = [|1.0f; 1.0f; 1.0f; 0.1f|]
     interface IDrawable with
       member this.prepare p vs =
-        vao <- prepare_aabb p vs color (Aabb.rawData Simulator.bounds)
+        vao <- prepare_aabb p vs color (Aabb.rawData Constants.bounds)
       member this.render location =
         GL.UniformMatrix4(location, false, &position)
         GL.BindVertexArray(vao)
@@ -101,8 +102,8 @@ module Drawables =
     let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
     let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
     let air_color = [|1.0f; 1.0f; 1.0f; 0.01f|]
-    let cell_bounds = { min_bounds = Vector.Vector3d(-Coord.h/2.0, -Coord.h/2.0, -Coord.h/2.0);
-                        max_bounds = Vector.Vector3d( Coord.h/2.0,  Coord.h/2.0,  Coord.h/2.0) }
+    let cell_bounds = { min_bounds = Vector.Vector3d(-Constants.h/2.0, -Constants.h/2.0, -Constants.h/2.0);
+                        max_bounds = Vector.Vector3d( Constants.h/2.0,  Constants.h/2.0,  Constants.h/2.0) }
     interface IDrawable with
       member this.prepare p vs =
         let color = match cell.media with
