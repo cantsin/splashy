@@ -31,6 +31,7 @@ module Coord =
          NegY, { this with y = this.y - h };
          PosZ, { this with z = this.z + h };
          NegZ, { this with z = this.z - h }; |]
+    override this.ToString () = sprintf "Coord[%d; %d; %d]" this.x this.y this.z
 
   let internal is_bordering d (v: Vector3d) =
     match d with
