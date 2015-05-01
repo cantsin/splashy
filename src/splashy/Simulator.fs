@@ -101,7 +101,26 @@ module Simulator =
     for KeyValue(marker, c) in lookups do
       for (r, value) in coefficients marker do
         m.[r, c] <- value
+    // construct divergence of velocity field
+    let c = Constants.h * Constants.fluid_density / Constants.time_step
+    let air (c: Coord) =
+      let neighbors = c.neighbors ()
+      Seq.filter(fun (_, n) ->
+                 match Grid.get n with
+                   | Some c -> c.media = Air
+                   | None -> false) neighbors
+                   |> Seq.length |> float
+    let b = Seq.map (fun m ->
+                     let f = Grid.divergence m
+                     let s = Constants.atmospheric_pressure * air m
+                     c * f - s
+                     ) markers
+                     |> Seq.toList |> vector
+    // let b = vector [ 1.0; -2.0; 0.0 ]
+    let x = m.Solve(b)
     printfn "%A" m
+    printfn "%A" b
+    printfn "answer: %A" x
 
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step

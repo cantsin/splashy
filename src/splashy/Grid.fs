@@ -110,8 +110,8 @@ module Grid =
 
   let internal get_shared_velocity d n =
     match get n with
-      | Some c when c.media = Fluid && is_bordering d c.velocity ->
-        c.velocity
+      | Some c when c.media = Fluid && Coord.is_bordering d c.velocity ->
+        Coord.border d c.velocity
       | _ ->
         Vector3d()
 
@@ -122,3 +122,22 @@ module Grid =
                     | None -> Vector3d()
     let v = Seq.fold (fun accum (d, n) -> accum .+ get_shared_velocity d n) (Vector3d()) neighbors
     v .- where_v
+
+  // for the divergence, we want to ignore velocity components between
+  // fluid and solid cells
+  let internal get_shared_velocity' v d n =
+    match get n with
+      | Some c when is_solid c && Coord.is_bordering d c.velocity ->
+        let nv = Coord.border d c.velocity
+        let cv = Coord.border d v
+        let result = nv .- cv
+        result.x + result.y + result.z
+      | _ ->
+        0.0
+
+  let divergence (where: Coord) =
+    let neighbors = where.forwardNeighbors ()
+    let v = match get where with
+              | Some c -> c.velocity
+              | None -> Vector3d()
+    Seq.fold (fun accum (d, n) -> accum + get_shared_velocity' v d n) 0.0 neighbors
