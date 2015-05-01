@@ -37,6 +37,12 @@ module Coord =
          PosZ, { this with z = this.z + h };
          NegZ, { this with z = this.z - h }; |]
 
+    member this.backwardNeighbors () =
+      let h = int Constants.h
+      [| NegX, { this with x = this.x - h };
+         NegY, { this with y = this.y - h };
+         NegZ, { this with z = this.z - h }; |]
+
     member this.forwardNeighbors () =
       let h = int Constants.h
       [| PosX, { this with x = this.x + h };

@@ -141,6 +141,3 @@ module Grid =
               | Some c -> c.velocity
               | None -> Vector3d()
     Seq.fold (fun accum (d, n) -> accum + get_shared_velocity' v d n) 0.0 neighbors
-
-  let gradient (where: Coord) v =
-    Vector3d()

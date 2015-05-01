@@ -117,10 +117,20 @@ module Simulator =
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
-    // finally apply pressure.
+    // finally apply pressure (but only to borders of fluid cells).
     let inv_c = 1.0 / c
+    let gradient (where: Coord) v =
+      let neighbors = where.forwardNeighbors ()
+      let p = results.[lookups.[where]]
+      let (_, v1) = neighbors.[0]
+      let (_, v2) = neighbors.[1]
+      let (_, v3) = neighbors.[2]
+      let n1 = if lookups.ContainsKey v1 then results.[lookups.[v1]] else 1.0
+      let n2 = if lookups.ContainsKey v2 then results.[lookups.[v2]] else 1.0
+      let n3 = if lookups.ContainsKey v3 then results.[lookups.[v3]] else 1.0
+      Vector3d(p - n1, p - n2, p - n3)
     Seq.iter2 (fun m result ->
-               let pressure = Grid.gradient m results
+               let pressure = gradient m results
                match Grid.get m with
                  | Some c -> Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
                  | None -> failwith "Marker did not have grid."
