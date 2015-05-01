@@ -116,11 +116,15 @@ module Simulator =
                      c * f - s
                      ) markers
                      |> Seq.toList |> vector
-    // let b = vector [ 1.0; -2.0; 0.0 ]
-    let x = m.Solve(b)
-    printfn "%A" m
-    printfn "%A" b
-    printfn "answer: %A" x
+    let results = m.Solve(b)
+    // finally apply pressure.
+    let inv_c = 1.0 / c
+    Seq.iter2 (fun m result ->
+               let pressure = Grid.gradient m results
+               match Grid.get m with
+                 | Some c -> Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
+                 | None -> failwith "Marker did not have grid."
+               ) markers results
 
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
