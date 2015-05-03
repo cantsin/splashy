@@ -17,6 +17,8 @@ module Grid =
 
   let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d() }
 
+  let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
+
   let mutable grid = new Dictionary<Coord, Cell>()
 
   let add where c = grid.Add (where, c)
@@ -56,6 +58,27 @@ module Grid =
       // get rid of unused cells.
       let leftover = filter_values (fun c -> c.layer = None)
       Seq.iter delete leftover
+
+  let cleanup () =
+    let coords = filter_values (fun _ -> true)
+    Seq.iter (fun m ->
+                match get m with
+                  | Some c when c.media = Fluid -> set m { c with layer = Some 0 }
+                  | Some c -> set m { c with layer = None }
+                  | _ -> failwith "Could not get/set grid cell."
+                ) coords
+    for i in 1..max_distance do
+      let nonfluid = filter_values (fun c -> c.layer = None)
+      Seq.iter (fun (m: Coord) ->
+                let neighbors = m.neighbors ()
+                let previous_layer = Seq.filter (fun (_, c) -> match get c with
+                                                                 | Some c when c.layer = Some (i - 1) -> true
+                                                                 | _ -> false
+                                                 ) neighbors
+                if Seq.length previous_layer <> 0 then
+                  let c = get m
+                  () // TODO extrapolate fluid velocities into surrounding cells.
+                ) nonfluid
 
   let internal get_velocity_index where index =
     match get where with

@@ -28,8 +28,7 @@ module Simulator =
 
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
-    let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
-    for i in 1..max_distance do
+    for i in 1..Grid.max_distance do
       let current_layer = Some (i - 1)
       let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
       let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) current
@@ -146,6 +145,7 @@ module Simulator =
     apply_forces ()     // F
     apply_viscosity ()  // v∇²u
     apply_pressure()    // -1/ρ∇p
+    Grid.cleanup ()
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
