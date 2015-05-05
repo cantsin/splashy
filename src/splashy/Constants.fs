@@ -26,7 +26,7 @@ module Constants =
   // pre-calculated.
   let time_step = time_step_constant * h / max_velocity
 
-  // for now.
+  // the world bounding box.
   let bounds_h = 100.0
   let bounds = { min_bounds = Vector3d(-bounds_h, -bounds_h, -bounds_h);
                  max_bounds = Vector3d( bounds_h,  bounds_h,  bounds_h) }

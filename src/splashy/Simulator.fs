@@ -150,10 +150,11 @@ module Simulator =
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
     let r = System.Random()
-    let l = int Constants.h
+    let h = int Constants.h
+    let l = int (Constants.bounds_h / Constants.h)
     markers <- [ for _ in 0..n-1 do
-                 let x = r.Next(-l, l)
-                 let y = r.Next(-l, l)
-                 let z = r.Next(-l, l)
+                 let x = r.Next(-l, l + 1) * h
+                 let y = r.Next(-l, l + 1) * h
+                 let z = r.Next(-l, l + 1) * h
                  yield { x = x; y = y; z = z; } ]
     update_fluid_markers ()

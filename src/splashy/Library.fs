@@ -129,6 +129,7 @@ type Splashy() =
       | Key.Right ->
         if not pressed then
           Simulator.advance ()
+          refresh_drawables ()
           pressed <- true
       | _ -> ()
 
@@ -145,7 +146,6 @@ type Splashy() =
     let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
-    refresh_drawables ()
     for drawable in drawables do
       drawable.render vertexLocation
 
