@@ -96,9 +96,7 @@ module Grid =
                   set m { c with layer = Some (i - 1) }
                 ) nonfluid
     // set velocities of solid cells to zero.
-    let solids = Seq.filter (fun m -> match get m with
-                                        | Some c when is_solid c -> true
-                                        | _ -> false) coords
+    let solids = filter_values is_solid
     Seq.iter (fun (m: Coord) ->
               let neighbors = m.neighbors ()
               for (_, neighbor) in neighbors do
