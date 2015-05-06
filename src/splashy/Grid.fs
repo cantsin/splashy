@@ -60,6 +60,7 @@ module Grid =
       Seq.iter delete leftover
 
   let cleanup () =
+    // reset layers.
     let coords = filter_values (fun _ -> true)
     Seq.iter (fun m ->
                 match get m with
@@ -67,6 +68,7 @@ module Grid =
                   | Some c -> set m { c with layer = None }
                   | _ -> failwith "Could not get/set grid cell."
                 ) coords
+    // extrapolate fluid velocities into surrounding cells.
     for i in 1..max_distance do
       let nonfluid = filter_values (fun c -> c.layer = None)
       Seq.iter (fun (m: Coord) ->
@@ -93,6 +95,17 @@ module Grid =
                   let c = get m |> Option.get
                   set m { c with layer = Some (i - 1) }
                 ) nonfluid
+    // set velocities of solid cells to zero.
+    let solids = Seq.filter (fun m -> match get m with
+                                        | Some c when is_solid c -> true
+                                        | _ -> false) coords
+    Seq.iter (fun (m: Coord) ->
+              let neighbors = m.neighbors ()
+              for (_, neighbor) in neighbors do
+                match get neighbor with
+                  | Some c when not (is_solid c) -> set neighbor { c with velocity = Vector3d() }
+                  | _ -> ()
+              ) solids
 
   let internal get_velocity_index where index =
     match get where with
