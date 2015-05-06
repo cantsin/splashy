@@ -128,9 +128,14 @@ type Splashy() =
       | Key.Escape -> base.Close()
       | Key.Right ->
         if not pressed then
-          Simulator.advance ()
-          refresh_drawables ()
-          pressed <- true
+          try
+            Simulator.advance ()
+            refresh_drawables ()
+            pressed <- true
+          with
+            | exn ->
+              printfn "Exception! %A" exn.Message
+              base.Close()
       | _ -> ()
 
   override o.OnKeyUp e =
