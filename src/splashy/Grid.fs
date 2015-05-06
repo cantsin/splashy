@@ -75,9 +75,23 @@ module Grid =
                                                                  | Some c when c.layer = Some (i - 1) -> true
                                                                  | _ -> false
                                                  ) neighbors
-                if Seq.length previous_layer <> 0 then
-                  let c = get m
-                  () // TODO extrapolate fluid velocities into surrounding cells.
+                let n = Seq.length previous_layer
+                if n <> 0 then
+                  let velocities = Seq.map (fun (_, where) -> match get where with
+                                                                | Some c -> c.velocity
+                                                                | None -> failwith "Internal error.") previous_layer
+                  let previous_layer_average = (Seq.fold (.+) (Vector3d()) velocities) ./ float n
+                  for dir, neighbor in neighbors do
+                    match get neighbor with
+                      | Some c when c.media = Fluid && Coord.is_bordering dir c.velocity ->
+                        let new_v = match dir with
+                                      | NegX | PosX -> Vector3d(previous_layer_average.x, c.velocity.y, c.velocity.z)
+                                      | NegY | PosY -> Vector3d(c.velocity.x, previous_layer_average.y, c.velocity.z)
+                                      | NegZ | PosZ -> Vector3d(c.velocity.x, c.velocity.y, previous_layer_average.z)
+                        set neighbor { c with velocity = new_v }
+                      | _ -> ()
+                  let c = get m |> Option.get
+                  set m { c with layer = Some (i - 1) }
                 ) nonfluid
 
   let internal get_velocity_index where index =
