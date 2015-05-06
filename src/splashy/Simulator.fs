@@ -101,7 +101,6 @@ module Simulator =
       for (r, value) in coefficients marker do
         m.[r, c] <- value
     // construct divergence of velocity field
-    let c = Constants.h * Constants.fluid_density / Constants.time_step
     let air (c: Coord) =
       let neighbors = c.neighbors ()
       Seq.filter(fun (_, n) ->
@@ -109,6 +108,7 @@ module Simulator =
                    | Some c -> c.media = Air
                    | None -> false) neighbors
                    |> Seq.length |> float
+    let c = Constants.h * Constants.fluid_density / Constants.time_step
     let b = Seq.map (fun m ->
                      let f = Grid.divergence m
                      let s = Constants.atmospheric_pressure * air m
@@ -135,6 +135,16 @@ module Simulator =
                  | None -> failwith "Marker did not have grid."
                ) markers results
 
+  let move_markers () =
+    // for now, advance by frame.
+    markers <- Seq.map (fun (marker: Coord) ->
+                        let p = marker.to_vector ()
+                        match get marker with
+                          | Some c ->
+                            let new_coords = p .+ (c.velocity .* Constants.time_step)
+                            { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
+                          | None -> failwith "Internal error.") markers |> Seq.toList
+
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
     Grid.setup (fun () ->
@@ -146,6 +156,7 @@ module Simulator =
     apply_viscosity ()  // v∇²u
     apply_pressure()    // -1/ρ∇p
     Grid.cleanup ()
+    move_markers()
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
