@@ -55,7 +55,7 @@ type Splashy() =
                yield cellbounds :> IDrawable ]
 
     for (cell: IDrawable) in cells do
-      cell.prepare program vertexShader
+      cell.prepare program
 
     // world bound needs to be drawn last (transparency reasons)
     drawables <- cells @ [(worldBounds :> IDrawable)]
@@ -96,7 +96,7 @@ type Splashy() =
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
     refresh_drawables ()
-    (worldBounds :> IDrawable).prepare program vertexShader
+    (worldBounds :> IDrawable).prepare program
 
     base.OnLoad e
 
@@ -153,6 +153,11 @@ type Splashy() =
 
     for drawable in drawables do
       drawable.render vertexLocation
+
+    let code = GL.GetError ()
+    if code <> ErrorCode.NoError then
+      printfn "GL error! %A" code
+      base.Close()
 
     GL.Flush()
     base.SwapBuffers()

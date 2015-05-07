@@ -13,14 +13,14 @@ open Grid
 open Simulator
 
 type IDrawable =
-  abstract member prepare: int -> int -> unit
+  abstract member prepare: int -> unit
   abstract member render: int -> unit
   abstract member destroy: unit -> unit
 
 // encapsulate GL calls to draw the bounding area, markers, and cells.
 module Drawables =
 
-  let internal prepare_aabb (program: int) (vs: int) colorData (data: float []) =
+  let internal prepare_aabb (program: int) colorData (data: float []) =
     let vao =
       let array = GL.GenVertexArray()
       GL.BindVertexArray(array)
@@ -34,8 +34,8 @@ module Drawables =
     let n = 4 * sizeof<float>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexPosition)
-    GL.BindAttribLocation(vs, vertexPosition, "vertex_position")
     GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, n, 0)
+    GL.BindAttribLocation(program, vertexPosition, "vertex_position")
 
     let normals =
       let buffer = GL.GenBuffer()
@@ -45,8 +45,8 @@ module Drawables =
     let n = 4 * sizeof<float32>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(Aabb.normalData.Length * n), Aabb.normalData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexNormal)
-    GL.BindAttribLocation(vs, vertexNormal, "vertex_normal")
     GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, n, 0)
+    GL.BindAttribLocation(program, vertexNormal, "vertex_normal")
 
     let color =
       let buffer = GL.GenBuffer()
@@ -57,8 +57,8 @@ module Drawables =
     let data = Seq.collect Enumerable.Repeat [ colorData, data.Length ] |> Seq.concat |> Array.ofSeq
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexColor)
-    GL.BindAttribLocation(vs, vertexColor, "vertex_color")
     GL.VertexAttribPointer(vertexColor, 4, VertexAttribPointerType.Float, false, n, 0)
+    GL.BindAttribLocation(program, vertexColor, "vertex_color")
 
     let indices =
       let buffer = GL.GenBuffer()
@@ -85,8 +85,8 @@ module Drawables =
     let mutable position = Matrix4.Identity
     let color = [|1.0f; 1.0f; 1.0f; 0.1f|]
     interface IDrawable with
-      member this.prepare p vs =
-        vao <- prepare_aabb p vs color (Aabb.rawData Constants.bounds)
+      member this.prepare p =
+        vao <- prepare_aabb p color (Aabb.rawData Constants.bounds)
       member this.render location =
         GL.UniformMatrix4(location, false, &position)
         GL.BindVertexArray(vao)
@@ -106,12 +106,12 @@ module Drawables =
     let cell_bounds = { min_bounds = Vector.Vector3d(-l, -l, -l);
                         max_bounds = Vector.Vector3d( l,  l,  l) }
     interface IDrawable with
-      member this.prepare p vs =
+      member this.prepare p =
         let color = match cell.media with
                        | Fluid -> fluid_color
                        | Solid -> solid_color
                        | Air -> air_color
-        let newVao = prepare_aabb p vs color (Aabb.rawData cell_bounds)
+        let newVao = prepare_aabb p color (Aabb.rawData cell_bounds)
         vao <- newVao
       member this.render location =
         let mutable m = Matrix4.CreateTranslation(transform)
