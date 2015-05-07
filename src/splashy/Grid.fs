@@ -10,10 +10,15 @@ module Grid =
 
   type Media = Air | Fluid | Solid
 
-  type Cell = { pressure: float;
-                media: Media;
-                velocity: Vector3d; // from the minimal faces, not the center
-                layer: Option<int>; }
+  type Cell =
+    { pressure: float;
+      media: Media;
+      velocity: Vector3d; // from the minimal faces, not the center
+      layer: Option<int>; }
+
+    member this.is_solid () = match this.media with Solid -> true | _ -> false
+
+    member this.is_not_solid () = not (this.is_solid ())
 
   let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d.ZERO }
 
@@ -47,10 +52,6 @@ module Grid =
     // potentially iterating over it.
     new List<Coord> (keys)
 
-  let is_solid c = match c.media with Solid -> true | _ -> false
-
-  let is_not_solid c = not (is_solid c)
-
   let setup fn =
     try
       // reset grid layers.
@@ -76,7 +77,7 @@ module Grid =
 
   let internal get_velocity_index where index =
     match get where with
-      | Some c when is_solid c ->
+      | Some c when c.is_solid () ->
         match index with
           | 0 -> Some c.velocity.x
           | 1 -> Some c.velocity.y
@@ -144,7 +145,7 @@ module Grid =
   // fluid and solid cells
   let internal get_shared_velocity' v d n =
     match get n with
-      | Some c when is_solid c && Coord.is_bordering d c.velocity ->
+      | Some c when c.is_solid () && Coord.is_bordering d c.velocity ->
         let nv = Coord.border d c.velocity
         let cv = Coord.border d v
         let result = nv .- cv

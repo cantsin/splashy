@@ -18,7 +18,7 @@ module Simulator =
   let update_fluid_markers () =
     Seq.iter (fun m ->
               match Grid.get m with
-                | Some c when Grid.is_not_solid c ->
+                | Some c when c.is_not_solid () ->
                     Grid.set m { c with media = Fluid; layer = Some 0; }
                 | None ->
                     if Aabb.contains Constants.bounds (m.to_vector ()) then
@@ -30,11 +30,11 @@ module Simulator =
   let create_air_buffer () =
     for i in 1..Grid.max_distance do
       let previous_layer_count = Some (i - 1)
-      let previous_layer = Grid.filter_values (fun c -> Grid.is_not_solid c && c.layer = previous_layer_count)
+      let previous_layer = Grid.filter_values (fun c -> c.is_not_solid () && c.layer = previous_layer_count)
       let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) previous_layer
       Seq.iter (fun (_, where) ->
                 match Grid.get where with
-                  | Some c when Grid.is_not_solid c && c.layer = None ->
+                  | Some c when c.is_not_solid () && c.layer = None ->
                       Grid.set where { c with media = Air; layer = Some i }
                   | None ->
                       if Aabb.contains Constants.bounds (where.to_vector ()) then
@@ -90,7 +90,7 @@ module Simulator =
                                   accum
                                 ) [] neighbors
       // return -N for this marker, where N is number of non solid neighbors.
-      let N = Grid.number_neighbors Grid.is_not_solid c
+      let N = Grid.number_neighbors (fun n -> n.is_not_solid ()) c
       (lookups.[c], - N) :: singulars
     // construct a sparse matrix of coefficients.
     let mutable m = SparseMatrix.zero<float> n n
@@ -153,13 +153,13 @@ module Simulator =
 
   // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
-    let solids = Grid.filter_values Grid.is_solid
+    let solids = Grid.filter_values (fun c -> c.is_solid ())
     Seq.iter (fun (m: Coord) ->
               let neighbors = m.neighbors ()
               for (dir, neighbor) in neighbors do
                 let inward = Coord.reverse dir
                 match Grid.get neighbor with
-                  | Some c when Grid.is_not_solid c ->
+                  | Some c when c.is_not_solid () ->
                     Grid.set neighbor { c with velocity = Coord.merge inward c.velocity Vector3d.ZERO }
                   | _ -> ()
               ) solids
