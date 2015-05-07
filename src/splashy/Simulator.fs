@@ -140,14 +140,22 @@ module Simulator =
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
     Grid.setup (fun () ->
+      printfn "Updating fluid markers."
       update_fluid_markers ()
+      printfn "Creating air buffer."
       create_air_buffer ()
     )
+    printfn "Applying convection."
     apply_convection () // -(∇⋅u)u
+    printfn "Applying forces."
     apply_forces ()     // F
+    printfn "Applying viscosity."
     apply_viscosity ()  // v∇²u
+    printfn "Applying pressure."
     apply_pressure()    // -1/ρ∇p
+    printfn "Cleaning up grid."
     Grid.cleanup ()
+    printfn "Moving markers."
     move_markers()
 
   // generate a random amount of markers to begin with (testing purposes only)
