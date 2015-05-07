@@ -34,4 +34,7 @@ module Vector =
                                                                  max v1.z v2.z)
 
       override this.ToString () = sprintf "Vector3d[%f; %f; %f]" this.x this.y this.z
+
     end
+
+  let average v = (Seq.fold (.+) (Vector3d()) v) ./ float (Seq.length v)

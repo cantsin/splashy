@@ -21,7 +21,9 @@ module Grid =
 
   let mutable grid = new Dictionary<Coord, Cell>()
 
-  let add where c = grid.Add (where, c)
+  let add where c =
+    printfn "Adding grid: %O %A" where c
+    grid.Add (where, c)
 
   let delete where = let _ = grid.Remove where in ()
 
@@ -47,66 +49,30 @@ module Grid =
 
   let is_solid c = match c.media with Solid -> true | _ -> false
 
+  let is_not_solid c = not (is_solid c)
+
   let setup fn =
     try
       // reset grid layers.
       let coords = filter_values (fun _ -> true)
       Seq.iter (fun m ->
-                match get m with
-                  | Some c -> set m { c with layer = None }
-                  | _ -> failwith "Could not get/set grid cell."
+                let c = raw_get m
+                set m { c with layer = None }
                 ) coords
       fn ()
     finally
-      // get rid of unused cells.
+      // get rid of unused layers.
       let leftover = filter_values (fun c -> c.layer = None)
       Seq.iter delete leftover
 
-  let cleanup () =
-    // reset layers.
+  let cleanup fn =
+    // reset grid layers but mark fluids as layer 0.
     let coords = filter_values (fun _ -> true)
     Seq.iter (fun m ->
-                match get m with
-                  | Some c when c.media = Fluid -> set m { c with layer = Some 0 }
-                  | Some c -> set m { c with layer = None }
-                  | _ -> failwith "Could not get/set grid cell."
-                ) coords
-    // extrapolate fluid velocities into surrounding cells.
-    for i in 1..max_distance do
-      let nonfluid = filter_values (fun c -> c.layer = None)
-      Seq.iter (fun (m: Coord) ->
-                let neighbors = m.neighbors ()
-                let previous_layer = Seq.filter (fun (_, c) -> match get c with
-                                                                 | Some c when c.layer = Some (i - 1) -> true
-                                                                 | _ -> false
-                                                 ) neighbors
-                let n = Seq.length previous_layer
-                if n <> 0 then
-                  let velocities = Seq.map (fun (_, where) -> match get where with
-                                                                | Some c -> c.velocity
-                                                                | None -> failwith "Internal error.") previous_layer
-                  let previous_layer_average = (Seq.fold (.+) (Vector3d()) velocities) ./ float n
-                  for dir, neighbor in neighbors do
-                    match get neighbor with
-                      | Some c when c.media = Fluid && Coord.is_bordering dir c.velocity ->
-                        let new_v = match dir with
-                                      | NegX | PosX -> Vector3d(previous_layer_average.x, c.velocity.y, c.velocity.z)
-                                      | NegY | PosY -> Vector3d(c.velocity.x, previous_layer_average.y, c.velocity.z)
-                                      | NegZ | PosZ -> Vector3d(c.velocity.x, c.velocity.y, previous_layer_average.z)
-                        set neighbor { c with velocity = new_v }
-                      | _ -> ()
-                  let c = raw_get m
-                  set m { c with layer = Some (i - 1) }
-                ) nonfluid
-    // set velocities of solid cells to zero.
-    let solids = filter_values is_solid
-    Seq.iter (fun (m: Coord) ->
-              let neighbors = m.neighbors ()
-              for (_, neighbor) in neighbors do
-                match get neighbor with
-                  | Some c when not (is_solid c) -> set neighbor { c with velocity = Vector3d() }
-                  | _ -> ()
-              ) solids
+              let c = raw_get m
+              set m { c with layer = if c.media = Fluid then Some 0 else None }
+              ) coords
+    fn ()
 
   let internal get_velocity_index where index =
     match get where with

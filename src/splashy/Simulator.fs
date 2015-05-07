@@ -18,7 +18,7 @@ module Simulator =
   let update_fluid_markers () =
     Seq.iter (fun m ->
               match Grid.get m with
-                | Some c when not (Grid.is_solid c) ->
+                | Some c when Grid.is_not_solid c ->
                     Grid.set m { c with media = Fluid; layer = Some 0; }
                 | None ->
                     if Aabb.contains Constants.bounds (m.to_vector ()) then
@@ -29,12 +29,12 @@ module Simulator =
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
     for i in 1..Grid.max_distance do
-      let current_layer = Some (i - 1)
-      let current = Grid.filter_values (fun c -> not (Grid.is_solid c) && c.layer = current_layer)
-      let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) current
+      let previous_layer_count = Some (i - 1)
+      let previous_layer = Grid.filter_values (fun c -> Grid.is_not_solid c && c.layer = previous_layer_count)
+      let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) previous_layer
       Seq.iter (fun (_, where) ->
                 match Grid.get where with
-                  | Some c when not (Grid.is_solid c) && c.layer = None ->
+                  | Some c when Grid.is_not_solid c && c.layer = None ->
                       Grid.set where { c with media = Air; layer = Some i }
                   | None ->
                       if Aabb.contains Constants.bounds (where.to_vector ()) then
@@ -90,7 +90,7 @@ module Simulator =
                                   accum
                                 ) [] neighbors
       // return -N for this marker, where N is number of non solid neighbors.
-      let N = Grid.number_neighbors (fun x -> not (Grid.is_solid x)) c
+      let N = Grid.number_neighbors Grid.is_not_solid c
       (lookups.[c], - N) :: singulars
     // construct a sparse matrix of coefficients.
     let mutable m = SparseMatrix.zero<float> n n
@@ -125,6 +125,43 @@ module Simulator =
                Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
                ) markers results
 
+
+  let extrapolate_velocities () =
+    // extrapolate fluid velocities into surrounding cells.
+    for i in 1..max_distance do
+      let previous_layer_count = Some (i - 1)
+      let get_previous_layer (_, c) = match get c with
+                                        | Some c when c.layer = previous_layer_count -> true
+                                        | _ -> false
+      let nonfluid = Grid.filter_values (fun c -> c.layer = None)
+      Seq.iter (fun (m: Coord) ->
+                let neighbors = m.neighbors ()
+                let previous_layer = Seq.filter get_previous_layer neighbors
+                let n = Seq.length previous_layer
+                if n <> 0 then
+                  let velocities = Seq.map (fun (_, where) -> (raw_get where).velocity) previous_layer
+                  let pla = Vector.average velocities
+                  for dir, neighbor in neighbors do
+                    match get neighbor with
+                      | Some c when c.media = Fluid && Coord.is_bordering dir c.velocity ->
+                        let new_v = Coord.merge dir c.velocity pla
+                        set neighbor { c with velocity = new_v }
+                      | _ -> ()
+                  let c = raw_get m
+                  set m { c with layer = previous_layer_count }
+                ) nonfluid
+
+  let zero_solid_velocities () =
+    // set velocities of solid cells to zero.
+    let solids = Grid.filter_values Grid.is_solid
+    Seq.iter (fun (m: Coord) ->
+              let neighbors = m.neighbors ()
+              for (_, neighbor) in neighbors do
+                match get neighbor with
+                  | Some c when is_not_solid c -> set neighbor { c with velocity = Vector3d() }
+                  | _ -> ()
+              ) solids
+
   let move_markers () =
     // for now, advance by frame.
     markers <- Seq.map (fun (marker: Coord) ->
@@ -152,7 +189,12 @@ module Simulator =
     printfn "Applying pressure."
     apply_pressure()    // -1/ρ∇p
     printfn "Cleaning up grid."
-    Grid.cleanup ()
+    Grid.cleanup (fun () ->
+      printfn "Extrapolating fluid velocities into surroundings."
+      extrapolate_velocities ()
+      printfn "Setting solid cell velocities to zero."
+      zero_solid_velocities()
+    )
     printfn "Moving markers."
     move_markers()
 

@@ -66,3 +66,9 @@ module Coord =
       | NegX | PosX -> Vector3d(v.x, 0.0, 0.0)
       | NegY | PosY -> Vector3d(0.0, v.y, 0.0)
       | NegZ | PosZ -> Vector3d(0.0, 0.0, v.z)
+
+  let merge d (old_v: Vector3d) (new_v: Vector3d) =
+    match d with
+      | NegX | PosX -> Vector3d(new_v.x, old_v.y, old_v.z)
+      | NegY | PosY -> Vector3d(old_v.x, new_v.y, old_v.z)
+      | NegZ | PosZ -> Vector3d(old_v.x, old_v.y, new_v.z)
