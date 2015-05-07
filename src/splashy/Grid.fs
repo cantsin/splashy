@@ -189,3 +189,8 @@ module Grid =
               | Some c -> c.velocity
               | None -> Vector3d()
     Seq.fold (fun accum (d, n) -> accum + get_shared_velocity' v d n) 0.0 neighbors
+
+  let number_neighbors fn (where: Coord) =
+    let neighbors = where.neighbors ()
+    let result = Seq.filter (fun (_, n) -> match get n with | Some c -> fn c | None -> false) neighbors
+    result |> Seq.length |> float

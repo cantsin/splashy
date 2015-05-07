@@ -91,30 +91,20 @@ module Simulator =
                                   accum
                                 ) [] neighbors
       // return -N for this marker, where N is number of non solid neighbors.
-      let N = Seq.filter (fun (_, n) ->
-                          match Grid.get n with
-                            | Some c -> not (Grid.is_solid c)
-                            | None -> false) neighbors
-                          |> Seq.length
-      (lookups.[c], - float N) :: singulars
+      let N = Grid.number_neighbors (fun x -> not (Grid.is_solid x)) c
+      (lookups.[c], - N) :: singulars
     // construct a sparse matrix of coefficients.
     let mutable m = SparseMatrix.zero<float> n n
     for KeyValue(marker, c) in lookups do
       for (r, value) in coefficients marker do
         m.[r, c] <- value
     // construct divergence of velocity field
-    let air (c: Coord) =
-      let neighbors = c.neighbors ()
-      Seq.filter(fun (_, n) ->
-                 match Grid.get n with
-                   | Some c -> c.media = Air
-                   | None -> false) neighbors
-                   |> Seq.length |> float
     let c = Constants.h * Constants.fluid_density / Constants.time_step
     let b = Seq.map (fun m ->
                      let f = Grid.divergence m
-                     let s = Constants.atmospheric_pressure * air m
-                     c * f - s
+                     let a = Grid.number_neighbors (fun c -> c.media = Air) m
+                     let s = Constants.atmospheric_pressure
+                     c * f - s * a
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
