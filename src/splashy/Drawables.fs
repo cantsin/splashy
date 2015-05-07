@@ -34,7 +34,7 @@ module Drawables =
     let n = sizeof<float>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexPosition)
-    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, n, 0)
+    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, n * 4, 0)
     GL.BindAttribLocation(program, vertexPosition, "vertex_position")
 
     let normals =
@@ -45,7 +45,7 @@ module Drawables =
     let n = sizeof<float32>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(Aabb.normalData.Length * n), Aabb.normalData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexNormal)
-    GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, n, 0)
+    GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, n * 4, 0)
     GL.BindAttribLocation(program, vertexNormal, "vertex_normal")
 
     let color =
@@ -57,7 +57,7 @@ module Drawables =
     let colors = Seq.collect Enumerable.Repeat [ colorData, data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), colors, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexColor)
-    GL.VertexAttribPointer(vertexColor, 4, VertexAttribPointerType.Float, false, n, 0)
+    GL.VertexAttribPointer(vertexColor, 4, VertexAttribPointerType.Float, false, n * 4, 0)
     GL.BindAttribLocation(program, vertexColor, "vertex_color")
 
     let indices =
