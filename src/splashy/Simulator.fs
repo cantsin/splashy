@@ -126,28 +126,28 @@ module Simulator =
                ) markers results
 
 
-  // extrapolate fluid velocities into surrounding cells.
-  let extrapolate_velocities () =
+  // propagate the fluid velocities into the buffer zone
+  let propagate_velocities () =
     for i in 1..max_distance do
+      let nonfluid = Grid.filter_values (fun c -> c.layer = None)
       let previous_layer_count = Some (i - 1)
       let get_previous_layer (_, c) = match get c with
                                         | Some c when c.layer = previous_layer_count -> true
                                         | _ -> false
-      let nonfluid = Grid.filter_values (fun c -> c.layer = None)
       Seq.iter (fun (m: Coord) ->
                 let neighbors = m.neighbors ()
                 let previous_layer = Seq.filter get_previous_layer neighbors
                 let n = Seq.length previous_layer
                 if n <> 0 then
+                  let c = raw_get m
                   let velocities = Seq.map (fun (_, where) -> (raw_get where).velocity) previous_layer
                   let pla = Vector.average velocities
                   for dir, neighbor in neighbors do
                     match get neighbor with
-                      | Some c when c.media = Fluid && Coord.is_bordering dir c.velocity ->
+                      | Some n when n.media <> Fluid && Coord.is_bordering dir c.velocity ->
                         let new_v = Coord.merge dir c.velocity pla
-                        set neighbor { c with velocity = new_v }
+                        set m { c with velocity = new_v }
                       | _ -> ()
-                  let c = raw_get m
                   set m { c with layer = previous_layer_count }
                 ) nonfluid
 
@@ -192,8 +192,8 @@ module Simulator =
     apply_pressure()    // -1/ρ∇p
     printfn "Cleaning up grid."
     Grid.cleanup (fun () ->
-      printfn "  Cleanup: Extrapolating fluid velocities into surroundings."
-      extrapolate_velocities ()
+      printfn "  Cleanup: Propagating fluid velocities into surroundings."
+      propagate_velocities ()
       printfn "  Cleanup: Setting solid cell velocities to zero."
       zero_solid_velocities()
     )

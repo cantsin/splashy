@@ -161,7 +161,7 @@ type Splashy() =
 module Library =
   let splashy = new Splashy()
   let version = GL.GetString(StringName.Version)
-  let N = 10
+  let N = 100
   printfn "GL version: %A" version
   printfn "Generating %d random markers" N
   Simulator.generate N

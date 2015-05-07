@@ -26,9 +26,7 @@ module Grid =
 
   let mutable grid = new Dictionary<Coord, Cell>()
 
-  let add where c =
-    printfn "Adding grid: %O %A" where c
-    grid.Add (where, c)
+  let add where c = grid.Add (where, c)
 
   let delete where = let _ = grid.Remove where in ()
 
