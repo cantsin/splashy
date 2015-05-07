@@ -51,6 +51,15 @@ module Coord =
 
     override this.ToString () = sprintf "Coord[%d; %d; %d]" this.x this.y this.z
 
+  let reverse d =
+    match d with
+      | NegX -> PosX
+      | PosX -> NegX
+      | NegY -> PosY
+      | PosY -> NegY
+      | NegZ -> PosZ
+      | PosZ -> NegZ
+
   let is_bordering d (v: Vector3d) =
     match d with
       | NegX when v.x < 0.0 -> true
