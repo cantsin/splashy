@@ -62,7 +62,9 @@ module Simulator =
                   | Some c ->
                     if c.media = Fluid && Coord.is_bordering direction v then
                       Grid.set neighbor { c with velocity = c.velocity .+ v }
-                  | None -> failwith "Could not get neighbor."
+                  | _ ->
+                    if Aabb.contains Constants.bounds (neighbor.to_vector ()) then
+                      failwith <| sprintf "Could not get neighbor %O of %O." neighbor m
               ) markers
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
