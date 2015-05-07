@@ -126,8 +126,8 @@ module Simulator =
                ) markers results
 
 
+  // extrapolate fluid velocities into surrounding cells.
   let extrapolate_velocities () =
-    // extrapolate fluid velocities into surrounding cells.
     for i in 1..max_distance do
       let previous_layer_count = Some (i - 1)
       let get_previous_layer (_, c) = match get c with
@@ -151,14 +151,15 @@ module Simulator =
                   set m { c with layer = previous_layer_count }
                 ) nonfluid
 
+  // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
-    // set velocities of solid cells to zero.
     let solids = Grid.filter_values Grid.is_solid
     Seq.iter (fun (m: Coord) ->
               let neighbors = m.neighbors ()
-              for (_, neighbor) in neighbors do
-                match get neighbor with
-                  | Some c when is_not_solid c -> set neighbor { c with velocity = Vector3d() }
+              for (dir, neighbor) in neighbors do
+                match Grid.get neighbor with
+                  | Some c when Grid.is_not_solid c ->
+                    Grid.set neighbor { c with velocity = Coord.merge dir c.velocity Vector3d.ZERO }
                   | _ -> ()
               ) solids
 
@@ -175,9 +176,9 @@ module Simulator =
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
     Grid.setup (fun () ->
-      printfn "Updating fluid markers."
+      printfn "  Setup: Updating fluid markers."
       update_fluid_markers ()
-      printfn "Creating air buffer."
+      printfn "  Setup: Creating air buffer."
       create_air_buffer ()
     )
     printfn "Applying convection."
@@ -190,9 +191,9 @@ module Simulator =
     apply_pressure()    // -1/ρ∇p
     printfn "Cleaning up grid."
     Grid.cleanup (fun () ->
-      printfn "Extrapolating fluid velocities into surroundings."
+      printfn "  Cleanup: Extrapolating fluid velocities into surroundings."
       extrapolate_velocities ()
-      printfn "Setting solid cell velocities to zero."
+      printfn "  Cleanup: Setting solid cell velocities to zero."
       zero_solid_velocities()
     )
     printfn "Moving markers."
