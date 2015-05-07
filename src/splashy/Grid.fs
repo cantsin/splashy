@@ -30,6 +30,9 @@ module Grid =
       | true -> Some grid.[where]
       | _ -> None
 
+  // unsafe. use only when absolutely certain that a corresponding grid cell exists.
+  let raw_get where = get where |> Option.get
+
   let set where c =
     match get where with
       | None -> failwith "Tried to set non-existent cell."
@@ -92,7 +95,7 @@ module Grid =
                                       | NegZ | PosZ -> Vector3d(c.velocity.x, c.velocity.y, previous_layer_average.z)
                         set neighbor { c with velocity = new_v }
                       | _ -> ()
-                  let c = get m |> Option.get
+                  let c = raw_get m
                   set m { c with layer = Some (i - 1) }
                 ) nonfluid
     // set velocities of solid cells to zero.

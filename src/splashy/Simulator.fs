@@ -69,12 +69,11 @@ module Simulator =
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity () =
-    let v = Constants.fluid_viscosity * Constants.time_step
+    let const_v = Constants.fluid_viscosity * Constants.time_step
     let velocities = Seq.map Grid.laplacian markers
-    Seq.iter2 (fun m velocity ->
-               match Grid.get m with
-                 | Some c -> Grid.set m { c with velocity = c.velocity .+ (velocity .* v) }
-                 | None -> failwith "Marker did not have grid."
+    Seq.iter2 (fun m v ->
+               let c = Grid.raw_get m
+               Grid.set m { c with velocity = c.velocity .+ (v .* const_v) }
                ) markers velocities
 
   // set the pressure such that the divergence throughout the fluid is zero.
@@ -122,9 +121,8 @@ module Simulator =
       Vector3d(p - n1, p - n2, p - n3)
     Seq.iter2 (fun m result ->
                let pressure = gradient m results
-               match Grid.get m with
-                 | Some c -> Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
-                 | None -> failwith "Marker did not have grid."
+               let c = Grid.raw_get m
+               Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
                ) markers results
 
   let move_markers () =
