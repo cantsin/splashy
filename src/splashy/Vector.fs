@@ -33,8 +33,10 @@ module Vector =
                                                                  max v1.y v2.y,
                                                                  max v1.z v2.z)
 
+      static member ZERO = Vector3d()
+
       override this.ToString () = sprintf "Vector3d[%f; %f; %f]" this.x this.y this.z
 
     end
 
-  let average v = (Seq.fold (.+) (Vector3d()) v) ./ float (Seq.length v)
+  let average v = (Seq.fold (.+) Vector3d.ZERO v) ./ float (Seq.length v)
