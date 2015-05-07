@@ -31,7 +31,7 @@ module Drawables =
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
     let vertexPosition = GL.GetAttribLocation(program, "vertex_position")
-    let n = 4 * sizeof<float>
+    let n = sizeof<float>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexPosition)
     GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, n, 0)
@@ -42,7 +42,7 @@ module Drawables =
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
     let vertexNormal = GL.GetAttribLocation(program, "vertex_normal")
-    let n = 4 * sizeof<float32>
+    let n = sizeof<float32>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(Aabb.normalData.Length * n), Aabb.normalData, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexNormal)
     GL.VertexAttribPointer(vertexNormal, 4, VertexAttribPointerType.Float, false, n, 0)
@@ -53,9 +53,9 @@ module Drawables =
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
     let vertexColor = GL.GetAttribLocation(program, "vertex_color")
-    let n = 4 * sizeof<float32>
-    let data = Seq.collect Enumerable.Repeat [ colorData, data.Length ] |> Seq.concat |> Array.ofSeq
-    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
+    let n = sizeof<float32>
+    let colors = Seq.collect Enumerable.Repeat [ colorData, data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
+    GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), colors, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexColor)
     GL.VertexAttribPointer(vertexColor, 4, VertexAttribPointerType.Float, false, n, 0)
     GL.BindAttribLocation(program, vertexColor, "vertex_color")
@@ -64,7 +64,7 @@ module Drawables =
       let buffer = GL.GenBuffer()
       GL.BindBuffer(BufferTarget.ElementArrayBuffer, buffer)
       buffer
-    let n = 4 * sizeof<int>
+    let n = sizeof<int>
     GL.BufferData(BufferTarget.ElementArrayBuffer, nativeint(Aabb.indicesData.Length * n), Aabb.indicesData, BufferUsageHint.StaticDraw)
 
     GL.BindVertexArray(0)
