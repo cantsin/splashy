@@ -198,6 +198,11 @@ module Simulator =
     )
     printfn "Moving fluid markers."
     move_markers()
+    // sanity check.
+    Seq.iter (fun (m: Coord) ->
+                if not (Aabb.contains Constants.bounds (m.to_vector ())) then
+                  failwith (sprintf "Error: Fluid markers went outside bounds (example: %O)." m)
+             ) markers
 
   // generate a random amount of markers to begin with (testing purposes only)
   let generate n =
