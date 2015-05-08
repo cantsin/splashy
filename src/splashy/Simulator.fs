@@ -17,13 +17,13 @@ module Simulator =
   // synchronize our fluid markers with the grid.
   let update_fluid_markers () =
     Seq.iter (fun m ->
-              match Grid.get m with
-                | Some c when c.is_not_solid () ->
-                    Grid.set m { c with media = Fluid; layer = Some 0; }
-                | None ->
-                    if Aabb.contains Constants.bounds (m.to_vector ()) then
-                      Grid.add m { Grid.default_cell with media = Fluid; layer = Some 0; }
-                | _ -> ()
+                match Grid.get m with
+                  | Some c when c.is_not_solid () ->
+                      Grid.set m { c with media = Fluid; layer = Some 0; }
+                  | None ->
+                      if Aabb.contains Constants.bounds (m.to_vector ()) then
+                        Grid.add m { Grid.default_cell with media = Fluid; layer = Some 0; }
+                  | _ -> ()
               ) markers
 
   // create air buffer zones around the fluid markers.
@@ -33,38 +33,38 @@ module Simulator =
       let previous_layer = Grid.filter_values (fun c -> c.is_not_solid () && c.layer = previous_layer_count)
       let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) previous_layer
       Seq.iter (fun (_, where) ->
-                match Grid.get where with
-                  | Some c when c.is_not_solid () && c.layer = None ->
-                      Grid.set where { c with media = Air; layer = Some i }
-                  | None ->
-                      if Aabb.contains Constants.bounds (where.to_vector ()) then
-                        Grid.add where { Grid.default_cell with media = Air; layer = Some i }
-                      else
-                        Grid.add where { Grid.default_cell with media = Solid; layer = Some i }
-                  | _ -> ()
+                  match Grid.get where with
+                    | Some c when c.is_not_solid () && c.layer = None ->
+                        Grid.set where { c with media = Air; layer = Some i }
+                    | None ->
+                        if Aabb.contains Constants.bounds (where.to_vector ()) then
+                          Grid.add where { Grid.default_cell with media = Air; layer = Some i }
+                        else
+                          Grid.add where { Grid.default_cell with media = Solid; layer = Some i }
+                    | _ -> ()
                 ) all_neighbors
 
   // convection by means of a backwards particle trace.
   let apply_convection () =
     let new_positions = Seq.map (fun m -> trace m Constants.time_step) markers
     Seq.iter2 (fun m np ->
-               match Grid.get m, Grid.get np with
-                 | Some c1, Some c2 -> Grid.set m { c1 with velocity = c2.velocity }
-                 | _ -> failwith "Backwards particle trace went too far."
+                 match Grid.get m, Grid.get np with
+                   | Some c1, Some c2 -> Grid.set m { c1 with velocity = c2.velocity }
+                   | _ -> failwith "Backwards particle trace went too far."
                ) markers new_positions
 
   // gravity only (for now).
   let apply_forces () =
     let v = Constants.gravity .* Constants.time_step
     Seq.iter (fun (m: Coord) ->
-              for direction, neighbor in m.neighbors () do
-                match Grid.get neighbor with
-                  | Some c ->
-                    if c.media = Fluid && Coord.is_bordering direction v then
-                      Grid.set neighbor { c with velocity = c.velocity .+ v }
-                  | _ ->
-                    if Aabb.contains Constants.bounds (neighbor.to_vector ()) then
-                      failwith <| sprintf "Could not get neighbor %O of %O." neighbor m
+                for direction, neighbor in m.neighbors () do
+                  match Grid.get neighbor with
+                    | Some c ->
+                      if c.media = Fluid && Coord.is_bordering direction v then
+                        Grid.set neighbor { c with velocity = c.velocity .+ v }
+                    | _ ->
+                      if Aabb.contains Constants.bounds (neighbor.to_vector ()) then
+                        failwith <| sprintf "Could not get neighbor %O of %O." neighbor m
               ) markers
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
@@ -72,8 +72,8 @@ module Simulator =
     let const_v = Constants.fluid_viscosity * Constants.time_step
     let velocities = Seq.map Grid.laplacian markers
     Seq.iter2 (fun m v ->
-               let c = Grid.raw_get m
-               Grid.set m { c with velocity = c.velocity .+ (v .* const_v) }
+                 let c = Grid.raw_get m
+                 Grid.set m { c with velocity = c.velocity .+ (v .* const_v) }
                ) markers velocities
 
   // set the pressure such that the divergence throughout the fluid is zero.
@@ -84,10 +84,10 @@ module Simulator =
       let neighbors = c.neighbors ()
       // return a 1 for every bordering liquid marker.
       let singulars = Seq.fold (fun accum (_, n) ->
-                                if lookups.ContainsKey n then
-                                  (lookups.[n], 1.0) :: accum
-                                else
-                                  accum
+                                  if lookups.ContainsKey n then
+                                    (lookups.[n], 1.0) :: accum
+                                  else
+                                    accum
                                 ) [] neighbors
       // return -N for this marker, where N is number of non solid neighbors.
       let N = Grid.number_neighbors (fun n -> n.is_not_solid ()) c
@@ -100,10 +100,10 @@ module Simulator =
     // construct divergence of velocity field
     let c = Constants.h * Constants.fluid_density / Constants.time_step
     let b = Seq.map (fun m ->
-                     let f = Grid.divergence m
-                     let a = Grid.number_neighbors (fun c -> c.media = Air) m
-                     let s = Constants.atmospheric_pressure
-                     c * f - s * a
+                       let f = Grid.divergence m
+                       let a = Grid.number_neighbors (fun c -> c.media = Air) m
+                       let s = Constants.atmospheric_pressure
+                       c * f - s * a
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
@@ -120,9 +120,9 @@ module Simulator =
       let n3 = if lookups.ContainsKey v3 then results.[lookups.[v3]] else 1.0
       Vector3d(p - n1, p - n2, p - n3)
     Seq.iter2 (fun m result ->
-               let pressure = gradient m results
-               let c = Grid.raw_get m
-               Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
+                 let pressure = gradient m results
+                 let c = Grid.raw_get m
+                 Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
                ) markers results
 
 
@@ -131,48 +131,47 @@ module Simulator =
     for i in 1..max_distance do
       let nonfluid = Grid.filter_values (fun c -> c.layer = None)
       let previous_layer_count = Some (i - 1)
-      let get_previous_layer (_, c) = match get c with
+      let get_previous_layer (_, c) = match Grid.get c with
                                         | Some c when c.layer = previous_layer_count -> true
                                         | _ -> false
       Seq.iter (fun (m: Coord) ->
-                let neighbors = m.neighbors ()
-                let previous_layer = Seq.filter get_previous_layer neighbors
-                let n = Seq.length previous_layer
-                if n <> 0 then
-                  let c = raw_get m
-                  let velocities = Seq.map (fun (_, where) -> (raw_get where).velocity) previous_layer
-                  let pla = Vector.average velocities
-                  for dir, neighbor in neighbors do
-                    match get neighbor with
-                      | Some n when n.media <> Fluid && Coord.is_bordering dir c.velocity ->
-                        let new_v = Coord.merge dir c.velocity pla
-                        set m { c with velocity = new_v }
-                      | _ -> ()
-                  set m { c with layer = previous_layer_count }
+                  let neighbors = m.neighbors ()
+                  let previous_layer = Seq.filter get_previous_layer neighbors
+                  let n = Seq.length previous_layer
+                  if n <> 0 then
+                    let c = Grid.raw_get m
+                    let velocities = Seq.map (fun (_, where) -> (Grid.raw_get where).velocity) previous_layer
+                    let pla = Vector.average velocities
+                    for dir, neighbor in neighbors do
+                      match Grid.get neighbor with
+                        | Some n when n.media <> Fluid && Coord.is_bordering dir c.velocity ->
+                          let new_v = Coord.merge dir c.velocity pla
+                          set m { c with velocity = new_v }
+                        | _ -> ()
+                    set m { c with layer = previous_layer_count }
                 ) nonfluid
 
   // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
     let solids = Grid.filter_values (fun c -> c.is_solid ())
     Seq.iter (fun (m: Coord) ->
-              let neighbors = m.neighbors ()
-              for (dir, neighbor) in neighbors do
-                let inward = Coord.reverse dir
-                match Grid.get neighbor with
-                  | Some c when c.is_not_solid () ->
-                    Grid.set neighbor { c with velocity = Coord.merge inward c.velocity Vector3d.ZERO }
-                  | _ -> ()
+                let neighbors = m.neighbors ()
+                for (dir, neighbor) in neighbors do
+                  let inward = Coord.reverse dir
+                  match Grid.get neighbor with
+                    | Some n when n.is_not_solid () ->
+                      Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
+                    | _ -> ()
               ) solids
 
   let move_markers () =
     // for now, advance by frame.
     markers <- Seq.map (fun (marker: Coord) ->
-                        let p = marker.to_vector ()
-                        match get marker with
-                          | Some c ->
-                            let new_coords = p .+ (c.velocity .* Constants.time_step)
-                            { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
-                          | None -> failwith "Internal error.") markers |> Seq.toList
+                          let p = marker.to_vector ()
+                          let c = Grid.raw_get marker
+                          let new_coords = p .+ (c.velocity .* Constants.time_step)
+                          { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
+                        ) markers |> Seq.toList
 
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
@@ -197,7 +196,7 @@ module Simulator =
       printfn "  Cleanup: Setting solid cell velocities to zero."
       zero_solid_velocities()
     )
-    printfn "Moving markers."
+    printfn "Moving fluid markers."
     move_markers()
 
   // generate a random amount of markers to begin with (testing purposes only)

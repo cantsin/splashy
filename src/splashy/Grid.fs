@@ -55,8 +55,8 @@ module Grid =
       // reset grid layers.
       let coords = filter_values (fun _ -> true)
       Seq.iter (fun m ->
-                let c = raw_get m
-                set m { c with layer = None }
+                  let c = raw_get m
+                  set m { c with layer = None }
                 ) coords
       fn ()
     finally
@@ -68,8 +68,8 @@ module Grid =
     // reset grid layers but mark fluids as layer 0.
     let coords = filter_values (fun _ -> true)
     Seq.iter (fun m ->
-              let c = raw_get m
-              set m { c with layer = if c.media = Fluid then Some 0 else None }
+                let c = raw_get m
+                set m { c with layer = if c.media = Fluid then Some 0 else None }
               ) coords
     fn ()
 
