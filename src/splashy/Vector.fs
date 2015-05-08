@@ -1,5 +1,7 @@
 namespace splashy
 
+open System
+
 module Vector =
   type Vector3d =
     struct
@@ -7,7 +9,10 @@ module Vector =
       val y: float
       val z: float
 
-      new(x: float, y: float, z:float) = { x = x; y = y; z = z; }
+      new(x: float, y: float, z:float) =
+        if Double.IsNaN x || Double.IsNaN y || Double.IsNaN z then
+          failwith "Vector3d got NaN."
+        { x = x; y = y; z = z; }
 
       // set up explicit operators, as i dislike overloading common operators.
       static member (.+) (v1: Vector3d, v2: Vector3d) = Vector3d(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
