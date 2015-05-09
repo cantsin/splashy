@@ -75,7 +75,7 @@ module Grid =
 
   let internal get_velocity_index where index =
     match get where with
-      | Some c when c.is_solid () ->
+      | Some c ->
         match index with
           | 0 -> Some c.velocity.x
           | 1 -> Some c.velocity.y

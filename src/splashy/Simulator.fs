@@ -46,12 +46,16 @@ module Simulator =
 
   // convection by means of a backwards particle trace.
   let apply_convection () =
-    let new_positions = Seq.map (fun m -> trace m Constants.time_step) markers
-    Seq.iter2 (fun m np ->
-                 match Grid.get m, Grid.get np with
-                   | Some c1, Some c2 -> Grid.set m { c1 with velocity = c2.velocity }
-                   | _ -> failwith "Backwards particle trace went too far."
-               ) markers new_positions
+    let new_velocities = Seq.map (fun m ->
+                                    let new_position = trace m Constants.time_step
+                                    match Grid.get new_position with
+                                      | Some c -> c.velocity
+                                      | _ -> failwith "Backwards particle trace went too far."
+                                  ) markers
+    Seq.iter2 (fun m new_v ->
+                 let c = Grid.raw_get m
+                 Grid.set m { c with velocity = new_v }
+              ) markers new_velocities
 
   // gravity only (for now).
   let apply_forces () =
