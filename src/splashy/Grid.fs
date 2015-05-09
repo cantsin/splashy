@@ -28,7 +28,7 @@ module Grid =
 
   let add where c = grid.Add (where, c)
 
-  let delete where = let _ = grid.Remove where in ()
+  let delete where = ignore <| grid.Remove where
 
   let get where =
     match grid.ContainsKey where with

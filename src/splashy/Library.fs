@@ -81,7 +81,7 @@ type Splashy() =
 
     let mutable s = ""
     GL.GetProgramInfoLog(program, &s)
-    if (Seq.length s) <> 0 then
+    if not (Seq.isEmpty s) then
       failwith (sprintf "Shader compilation failed:\n%A" s)
     GL.UseProgram(program)
 

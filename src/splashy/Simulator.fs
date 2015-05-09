@@ -126,7 +126,7 @@ module Simulator =
                ) markers results
 
 
-  // propagate the fluid velocities into the buffer zone
+  // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =
     for i in 1..max_distance do
       let nonfluid = Grid.filter_values (fun c -> c.layer = None)
