@@ -45,9 +45,9 @@ module Simulator =
                 ) all_neighbors
 
   // convection by means of a backwards particle trace.
-  let apply_convection () =
+  let apply_convection dt =
     let new_velocities = Seq.map (fun m ->
-                                    let new_position = trace m Constants.time_step
+                                    let new_position = trace m dt
                                     match Grid.get new_position with
                                       | Some c -> c.velocity
                                       | _ -> failwith "Backwards particle trace went too far."
@@ -58,8 +58,8 @@ module Simulator =
               ) markers new_velocities
 
   // gravity only (for now).
-  let apply_forces () =
-    let v = Constants.gravity .* Constants.time_step
+  let apply_forces dt =
+    let v = Constants.gravity .* dt
     Seq.iter (fun (m: Coord) ->
                 for direction, neighbor in m.neighbors () do
                   match Grid.get neighbor with
@@ -72,8 +72,8 @@ module Simulator =
               ) markers
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
-  let apply_viscosity () =
-    let const_v = Constants.fluid_viscosity * Constants.time_step
+  let apply_viscosity dt =
+    let const_v = Constants.fluid_viscosity * dt
     let velocities = Seq.map Grid.laplacian markers
     Seq.iter2 (fun m v ->
                  let c = Grid.raw_get m
@@ -81,7 +81,7 @@ module Simulator =
                ) markers velocities
 
   // set the pressure such that the divergence throughout the fluid is zero.
-  let apply_pressure () =
+  let apply_pressure dt =
     let n = Seq.length markers
     let lookups = Seq.zip markers { 0..n } |> dict
     let coefficients (c: Coord) =
@@ -101,8 +101,8 @@ module Simulator =
     for KeyValue(marker, c) in lookups do
       for (r, value) in coefficients marker do
         m.[r, c] <- value
-    // construct divergence of velocity field
-    let c = Constants.h * Constants.fluid_density / Constants.time_step
+    // construct divergence of velocity field.
+    let c = Constants.h * Constants.fluid_density / dt
     let b = Seq.map (fun m ->
                        let f = Grid.divergence m
                        let a = Grid.number_neighbors (fun c -> c.media = Air) m
@@ -111,7 +111,7 @@ module Simulator =
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
-    // finally apply pressure (but only to borders of fluid cells).
+    // apply pressure only to borders of fluid cells.
     let inv_c = 1.0 / c
     let gradient (where: Coord) v =
       let neighbors = where.forwardNeighbors ()
@@ -168,17 +168,18 @@ module Simulator =
                     | _ -> ()
               ) solids
 
-  let move_markers () =
+  let move_markers dt =
     // for now, advance by frame.
     markers <- Seq.map (fun (marker: Coord) ->
                           let p = marker.to_vector ()
                           let c = Grid.raw_get marker
-                          let new_coords = p .+ (c.velocity .* Constants.time_step)
+                          let new_coords = p .+ (c.velocity .* dt)
                           { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
                         ) markers |> Seq.toList
 
   let advance () =
     printfn "Moving simulation forward with time step %A." Constants.time_step
+    let dt = Constants.time_step
     Grid.setup (fun () ->
       printfn "  Setup: Updating fluid markers."
       update_fluid_markers ()
@@ -186,13 +187,13 @@ module Simulator =
       create_air_buffer ()
     )
     printfn "Applying convection."
-    apply_convection () // -(∇⋅u)u
+    apply_convection dt // -(∇⋅u)u
     printfn "Applying forces."
-    apply_forces ()     // F
+    apply_forces dt     // F
     printfn "Applying viscosity."
-    apply_viscosity ()  // v∇²u
+    apply_viscosity dt  // v∇²u
     printfn "Applying pressure."
-    apply_pressure()    // -1/ρ∇p
+    apply_pressure dt   // -1/ρ∇p
     printfn "Cleaning up grid."
     Grid.cleanup (fun () ->
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
@@ -201,7 +202,7 @@ module Simulator =
       zero_solid_velocities()
     )
     printfn "Moving fluid markers."
-    move_markers()
+    move_markers dt
     // sanity check.
     Seq.iter (fun (m: Coord) ->
                 if not (Aabb.contains Constants.bounds (m.to_vector ())) then
