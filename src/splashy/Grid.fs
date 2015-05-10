@@ -143,7 +143,7 @@ module Grid =
   // fluid and solid cells
   let internal get_shared_velocity' v d n =
     match get n with
-      | Some c when c.is_solid () && Coord.is_bordering d c.velocity ->
+      | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
         let nv = Coord.border d c.velocity
         let cv = Coord.border d v
         let result = nv .- cv
@@ -156,7 +156,7 @@ module Grid =
     let v = match get where with
               | Some c -> c.velocity
               | None -> Vector3d.ZERO
-    Seq.fold (fun accum (d, n) -> accum + get_shared_velocity' v d n) 0.0 neighbors
+    Seq.map (fun (d, n) -> get_shared_velocity' v d n) neighbors |> Seq.sum
 
   let number_neighbors fn (where: Coord) =
     let neighbors = where.neighbors ()
