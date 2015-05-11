@@ -7,23 +7,23 @@ module Coord =
 
   type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
 
-  [<CustomEquality;CustomComparison>]
+  //[<CustomEquality;CustomComparison>]
   type Coord =
     { x: int; y: int; z: int }
 
-    override this.GetHashCode () =
-      541 * this.x + 79 * this.y + 31 * this.z
+    // override this.GetHashCode () =
+    //   541 * this.x + 79 * this.y + 31 * this.z
 
-    override this.Equals that =
-      match that with
-        | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
-        | _ -> false
+    // override this.Equals that =
+    //   match that with
+    //     | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
+    //     | _ -> false
 
-    interface System.IComparable with
-      member this.CompareTo that =
-        match that with
-          | :? Coord as c -> compare this c
-          | _ -> invalidArg "Coord" "cannot compare values of different types."
+    // interface System.IComparable with
+    //   member this.CompareTo that =
+    //     match that with
+    //       | :? Coord as c -> compare this c
+    //       | _ -> invalidArg "Coord" "cannot compare values of different types."
 
     member this.to_vector () =
       Vector3d(float this.x, float this.y, float this.z)

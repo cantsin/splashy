@@ -214,9 +214,11 @@ module Simulator =
     let r = System.Random()
     let h = int Constants.h
     let l = int (Constants.bounds_h / Constants.h)
-    markers <- [ for _ in 0..n-1 do
-                 let x = r.Next(-l, l + 1) * h
-                 let y = r.Next(-l, l + 1) * h
-                 let z = r.Next(-l, l + 1) * h
-                 yield { x = x; y = y; z = z; } ]
+    let l = 2
+    let new_markers = [ for _ in 0..n-1 do
+                        let x = r.Next(-l, l + 1) * h
+                        let y = r.Next(-l, l + 1) * h
+                        let z = r.Next(-l, l + 1) * h
+                        yield { x = x; y = y; z = z; } ]
+    markers <- Set.ofList new_markers |> Seq.toList
     update_fluid_markers ()
