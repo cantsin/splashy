@@ -29,15 +29,15 @@ type Splashy() =
 
   let mutable projection_location = 0
   let mutable model_view_location = 0
-  let mutable vertex_location = 0 // allow VAOs to set their own matrix transform
+  let mutable vertex_location = 0 // allow VAOs to set their own matrix transform.
 
   let mutable time = 0.0f
-  let mutable pressed = false // don't rush through simulation
+  let mutable pressed = false // don't rush through the simulation.
 
   let eye = Vector3(0.0f, 0.0f, -400.0f)
 
   // drawables.
-  let world_bounds = new AreaBounds () // fixed, does not change
+  let world_bounds = new AreaBounds () // fixed, does not change.
   let mutable drawables = []
   let mutable cells = []
 
@@ -56,7 +56,7 @@ type Splashy() =
     for (cell: IDrawable) in cells do
       cell.prepare program
 
-    // world bound needs to be drawn last (transparency reasons)
+    // world bound needs to be drawn last (transparency reasons).
     drawables <- cells @ [(world_bounds :> IDrawable)]
 
   override o.OnLoad e =
@@ -128,7 +128,7 @@ type Splashy() =
       | Key.Right ->
         if not pressed then
           try
-            Simulator.advance 0.016671 // 30fps
+            Simulator.advance 0.016671 // 30fps.
             refresh_drawables ()
             pressed <- true
           with

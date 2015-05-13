@@ -1,11 +1,11 @@
 * sources and sinks [0/1]
 ** TODO implement source
-* simulation [4/6]
+* simulation [5/6]
 ** DONE backwards particle trace
 ** DONE runge kutta order 2 interpolation for trace
 ** DONE viscosity
 ** DONE pressure
-** TODO time step vs frame by frame
+** DONE time step vs frame by frame
 ** TODO simulation is still not correct
 * graphics [1/2]
 ** TODO implement camera
@@ -13,3 +13,6 @@
 * simulation [1/1]
 ** DONE look at Microsoft.FSharp.Math (sparse matrix solver?)
 - http://tomasp.net/blog/powerpack-matrix.aspx/
+* bugs [2/2]
+** DONE positions should be locked by Constants.h
+** DONE water aabb disappears after a while

@@ -66,12 +66,13 @@ module Simulator =
   let apply_forces dt =
     let f = Constants.gravity .* dt
     for marker in markers do
+      let cell = Grid.raw_get marker
       for direction, neighbor in marker.neighbors () do
         let inward = Coord.reverse direction
         match Grid.get neighbor with
-          | Some c ->
+          | Some _ ->
             if Coord.is_bordering inward f then
-              Grid.set marker { c with velocity = c.velocity .+ f }
+              Grid.set marker { cell with velocity = cell.velocity .+ f }
           | _ ->
             if Aabb.contains world neighbor then
               failwith <| sprintf "Could not get neighbor %O of %O." neighbor marker
@@ -188,6 +189,7 @@ module Simulator =
 
   let advance dt =
     let dt = dt * Constants.time_step
+    printfn "-->"
     printfn "Moving simulation forward with time step %A." dt
     Grid.setup (fun () ->
       printfn "  Setup: Updating fluid markers."
