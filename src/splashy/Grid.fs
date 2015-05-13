@@ -12,16 +12,16 @@ module Grid =
   type Media = Air | Fluid | Solid
 
   type Cell =
-    { pressure: float;
-      media: Media;
-      velocity: Vector3d; // from the minimal faces, not the center
+    { media: Media;
+      velocity: Vector3d<m/s>; // from the minimal faces, not the center
+      pressure: float<kg/(m*s^2)>;
       layer: Option<int>; }
 
     member this.is_solid () = match this.media with Solid -> true | _ -> false
 
     member this.is_not_solid () = not (this.is_solid ())
 
-  let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d.NONE }
+  let default_cell = { pressure = 0.0<kg/(m*s^2)>; media = Air; layer = None; velocity = Vector3d.ZERO }
 
   let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
 
@@ -113,16 +113,16 @@ module Grid =
     let z = interpolate (xh - 0.5) (yh - 0.5) zh 2
     Vector3d(x, y, z)
 
-  let trace (c: Coord) t =
+  let trace (c: Coord) (t: float<s>) =
     // runge kutta order two interpolation
-    let cv = c.to_vector3d ()
+    let cv = Vector3d<m>(float c.x * 1.0<m>, float c.y * 1.0<m>, float c.z * 1.0<m>)
     let v = get_interpolated_velocity cv.x cv.y cv.z
     let x = cv.x + 0.5 * t * v.x
     let y = cv.y + 0.5 * t * v.y
     let z = cv.z + 0.5 * t * v.z
     let dv = get_interpolated_velocity x y z
     let p = cv .+ (dv .* t)
-    let to_int x = round (x * 1.0<s/m>) |> int
+    let to_int x = round (x * 1.0<1/m>) |> int
     { x = to_int p.x; y = to_int p.y; z = to_int p.z }
 
   let internal get_shared_velocity d n =
@@ -130,14 +130,15 @@ module Grid =
       | Some c when c.media = Fluid && Coord.is_bordering d c.velocity ->
         Coord.border d c.velocity
       | _ ->
-        Vector3d.NONE
+        Vector3d.ZERO
 
   let laplacian (where: Coord) =
     let neighbors = where.neighbors ()
     let where_v = match get where with
                     | Some c -> c.velocity .* 6.0
-                    | None -> Vector3d.NONE
-    let v = Seq.fold (fun accum (d, n) -> accum .+ get_shared_velocity d n) Vector3d.NONE neighbors
+                    | None -> Vector3d.ZERO
+    let vs = Seq.map (fun (d, n) -> get_shared_velocity d n) neighbors
+    let v = Vector.sum vs
     let result = v .- where_v
     [result.x * 1.0<1/m^2>; result.y * 1.0<1/m^2>; result.z * 1.0<1/m^2>]
 
@@ -157,7 +158,7 @@ module Grid =
     let neighbors = where.forwardNeighbors ()
     let v = match get where with
               | Some c -> c.velocity
-              | None -> Vector3d.NONE
+              | None -> Vector3d.ZERO
     Seq.map (fun (d, n) -> get_shared_velocity' v d n) neighbors |> Seq.sum
 
   let number_neighbors fn (where: Coord) =

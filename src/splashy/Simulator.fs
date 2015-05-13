@@ -51,6 +51,7 @@ module Simulator =
 
   // convection by means of a backwards particle trace.
   let apply_convection dt =
+    let dt = dt * 1.0<s>
     let new_velocities = Seq.map (fun m ->
                                     let new_position = trace m dt
                                     match Grid.get new_position with
@@ -65,7 +66,7 @@ module Simulator =
   // gravity only (for now).
   let apply_forces dt =
     let dt = dt * 1.0<s>
-    let f = Vector3d(0.0<m/s>, Constants.gravity * dt, 0.0<m/s>)
+    let f = Vector3d<m/s>(0.0<m/s>, Constants.gravity * dt, 0.0<m/s>)
     Seq.iter (fun (m: Coord) ->
                 for direction, neighbor in m.neighbors () do
                   match Grid.get neighbor with
@@ -84,7 +85,7 @@ module Simulator =
     let velocities = Seq.map Grid.laplacian markers
     Seq.iter2 (fun m (result: float<1/(m*s)> list) ->
                  let c = Grid.raw_get m
-                 let dv = Vector3d(result.[0] * const_v, result.[1] * const_v, result.[2] * const_v)
+                 let dv = Vector3d<m/s>(result.[0] * const_v, result.[1] * const_v, result.[2] * const_v)
                  Grid.set m { c with velocity = c.velocity .+ dv }
                ) markers velocities
 
@@ -131,7 +132,7 @@ module Simulator =
       let n1 = if lookups.ContainsKey v1 then results.[lookups.[v1]] else 1.0
       let n2 = if lookups.ContainsKey v2 then results.[lookups.[v2]] else 1.0
       let n3 = if lookups.ContainsKey v3 then results.[lookups.[v3]] else 1.0
-      Vector3d((p - n1) * 1.0<m/s>, (p - n2) * 1.0<m/s>, (p - n3) * 1.0<m/s>)
+      Vector3d<m/s>((p - n1) * 1.0<m/s>, (p - n2) * 1.0<m/s>, (p - n3) * 1.0<m/s>)
     Seq.iter2 (fun m result ->
                  let pressure = gradient m results
                  let c = Grid.raw_get m
@@ -173,16 +174,18 @@ module Simulator =
                   let inward = Coord.reverse dir
                   match Grid.get neighbor with
                     | Some n when n.is_not_solid () ->
-                      Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.NONE }
+                      Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
                     | _ -> ()
               ) solids
 
   let move_markers dt =
     // for now, advance by frame.
-    markers <- Seq.map (fun (marker: Coord) ->
-                          let p = marker.to_vector3d ()
-                          let c = Grid.raw_get marker
+    let dt = dt * 1.0<s>
+    markers <- Seq.map (fun (m: Coord) ->
+                          let p = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
+                          let c = Grid.raw_get m
                           let new_coords = p .+ (c.velocity .* dt)
+                          printfn "new coords: %O from %O; velocity is %O" new_coords m c.velocity
                           { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
                         ) markers |> Seq.toList
 

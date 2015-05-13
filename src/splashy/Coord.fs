@@ -11,6 +11,8 @@ module Coord =
 
   type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
 
+  // TODO: make coord a SI unit -- int<m>
+
   //[<CustomEquality;CustomComparison>]
   type Coord =
     { x: int; y: int; z: int }
@@ -28,12 +30,6 @@ module Coord =
     //     match that with
     //       | :? Coord as c -> compare this c
     //       | _ -> invalidArg "Coord" "cannot compare values of different types."
-
-    member this.to_vector3 () =
-      Vector3(float32 this.x, float32 this.y, float32 this.z)
-
-    member this.to_vector3d () =
-      Vector3d(float this.x * 1.0<m/s>, float this.y * 1.0<m/s>, float this.z * 1.0<m/s>)
 
     member this.neighbors () =
       let h = int Constants.h
@@ -67,24 +63,24 @@ module Coord =
       | NegZ -> PosZ
       | PosZ -> NegZ
 
-  let is_bordering d (v: Vector3d) =
+  let is_bordering d (v: Vector3d<'u>) =
     match d with
-      | NegX when v.x < 0.0<m/s> -> true
-      | PosX when v.x > 0.0<m/s> -> true
-      | NegY when v.y < 0.0<m/s> -> true
-      | PosY when v.y > 0.0<m/s> -> true
-      | NegZ when v.z < 0.0<m/s> -> true
-      | PosZ when v.z > 0.0<m/s> -> true
+      | NegX when v.x < 0.0<_> -> true
+      | PosX when v.x > 0.0<_> -> true
+      | NegY when v.y < 0.0<_> -> true
+      | PosY when v.y > 0.0<_> -> true
+      | NegZ when v.z < 0.0<_> -> true
+      | PosZ when v.z > 0.0<_> -> true
       | _ -> false
 
-  let border d (v: Vector3d) =
+  let border d (v: Vector3d<'u>) =
     match d with
-      | NegX | PosX -> Vector3d(v.x, 0.0<m/s>, 0.0<m/s>)
-      | NegY | PosY -> Vector3d(0.0<m/s>, v.y, 0.0<m/s>)
-      | NegZ | PosZ -> Vector3d(0.0<m/s>, 0.0<m/s>, v.z)
+      | NegX | PosX -> Vector3d<'u>(v.x, 0.0<_>, 0.0<_>)
+      | NegY | PosY -> Vector3d<'u>(0.0<_>, v.y, 0.0<_>)
+      | NegZ | PosZ -> Vector3d<'u>(0.0<_>, 0.0<_>, v.z)
 
-  let merge d (old_v: Vector3d) (new_v: Vector3d) =
+  let merge d (old_v: Vector3d<'u>) (new_v: Vector3d<'u>) =
     match d with
-      | NegX | PosX -> Vector3d(new_v.x, old_v.y, old_v.z)
-      | NegY | PosY -> Vector3d(old_v.x, new_v.y, old_v.z)
-      | NegZ | PosZ -> Vector3d(old_v.x, old_v.y, new_v.z)
+      | NegX | PosX -> Vector3d<'u>(new_v.x, old_v.y, old_v.z)
+      | NegY | PosY -> Vector3d<'u>(old_v.x, new_v.y, old_v.z)
+      | NegZ | PosZ -> Vector3d<'u>(old_v.x, old_v.y, new_v.z)
