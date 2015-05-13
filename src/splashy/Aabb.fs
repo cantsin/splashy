@@ -2,13 +2,16 @@ namespace splashy
 
 open OpenTK
 
+open Coord
+
 /// axis-aligned bounding boxes: used to draw the bounds of the
 /// simulation and also those cells that represent fluid markers.
 module Aabb =
   type Aabb = { min_bounds: Vector3;
                 max_bounds: Vector3 }
 
-  let contains a (p: Vector3) =
+  let contains a (c: Coord) =
+    let p = Vector3(float32 c.x, float32 c.y, float32 c.z)
     p.[0] >= a.min_bounds.[0] && p.[0] <= a.max_bounds.[0] &&
     p.[1] >= a.min_bounds.[1] && p.[1] <= a.max_bounds.[1] &&
     p.[2] >= a.min_bounds.[2] && p.[2] <= a.max_bounds.[2]

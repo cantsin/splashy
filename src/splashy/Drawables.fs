@@ -86,7 +86,7 @@ module Drawables =
     let color = [|1.0f; 1.0f; 1.0f; 0.1f|]
     interface IDrawable with
       member this.prepare p =
-        vao <- prepare_aabb p color (Aabb.raw_data Constants.bounds)
+        vao <- prepare_aabb p color (Aabb.raw_data Simulator.world)
       member this.render location =
         GL.UniformMatrix4(location, false, &position)
         GL.BindVertexArray(vao)

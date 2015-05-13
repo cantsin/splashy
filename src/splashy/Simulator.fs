@@ -3,6 +3,7 @@ namespace splashy
 open MathNet.Numerics.LinearAlgebra
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic
+open OpenTK
 
 open Constants
 open Vector
@@ -14,6 +15,10 @@ module Simulator =
 
   let mutable markers: Coord list = []
 
+  // the world bounding box.
+  let world = { min_bounds = Vector3(-Constants.world_h, -Constants.world_h, -Constants.world_h);
+                max_bounds = Vector3( Constants.world_h,  Constants.world_h,  Constants.world_h) }
+
   // synchronize our fluid markers with the grid.
   let update_fluid_markers () =
     Seq.iter (fun m ->
@@ -21,7 +26,7 @@ module Simulator =
                   | Some c when c.is_not_solid () ->
                       Grid.set m { c with media = Fluid; layer = Some 0; }
                   | None ->
-                      if Aabb.contains Constants.bounds (m.to_vector3 ()) then
+                      if Aabb.contains world m then
                         Grid.add m { Grid.default_cell with media = Fluid; layer = Some 0; }
                   | _ -> ()
               ) markers
@@ -37,7 +42,7 @@ module Simulator =
                     | Some c when c.is_not_solid () && c.layer = None ->
                         Grid.set where { c with media = Air; layer = Some i }
                     | None ->
-                        if Aabb.contains Constants.bounds (where.to_vector3 ()) then
+                        if Aabb.contains world where then
                           Grid.add where { Grid.default_cell with media = Air; layer = Some i }
                         else
                           Grid.add where { Grid.default_cell with media = Solid; layer = Some i }
@@ -67,7 +72,7 @@ module Simulator =
                       if c.media = Fluid && Coord.is_bordering direction v then
                         Grid.set neighbor { c with velocity = c.velocity .+ v }
                     | _ ->
-                      if Aabb.contains Constants.bounds (neighbor.to_vector3 ()) then
+                      if Aabb.contains world neighbor then
                         failwith <| sprintf "Could not get neighbor %O of %O." neighbor m
               ) markers
 
@@ -206,7 +211,7 @@ module Simulator =
     move_markers dt
     // sanity check.
     Seq.iter (fun (m: Coord) ->
-                if not (Aabb.contains Constants.bounds (m.to_vector3 ())) then
+                if not (Aabb.contains world m) then
                   failwith (sprintf "Error: Fluid markers went outside bounds (example: %O)." m)
              ) markers
 
@@ -215,7 +220,7 @@ module Simulator =
     let r = System.Random()
     let h = int Constants.h
     let l = 2
-    let l = int (Constants.bounds_h / float32 Constants.h)
+    let l = int (Constants.world_h / float32 Constants.h)
     let new_markers = [ for _ in 0..n-1 do
                         let x = r.Next(-l, l + 1) * h
                         let y = r.Next(-l, l + 1) * h
