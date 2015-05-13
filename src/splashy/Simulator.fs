@@ -40,8 +40,8 @@ module Simulator =
       let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) previous_layer
       for (_, where) in all_neighbors do
         match Grid.get where with
-          | Some c when c.is_not_solid () && c.layer = None ->
-            Grid.set where { c with media = Air; layer = Some i }
+          | Some c when c.media <> Fluid && c.layer = None ->
+            Grid.set where { c with layer = Some i }
           | None ->
             if Aabb.contains world where then
               Grid.add where { Grid.default_cell with media = Air; layer = Some i }
