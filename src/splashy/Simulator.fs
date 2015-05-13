@@ -110,25 +110,26 @@ module Simulator =
                        let f = Grid.divergence m
                        let a = Grid.number_neighbors (fun c -> c.media = Air) m
                        let s = Constants.atmospheric_pressure
-                       let result: float<kg/(m*s^2)> = c * f - (s * a)
+                       let result: float<kg/(m*s^2)> = c * f - (s * a) // ensure pressure units.
                        float result
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
     // apply pressure only to borders of fluid cells.
-    // TODO: very wrong.
-    let inv_c = 1.0 / float c
+    let inv_c = 1.0 / c
+    let get_result key =
+      let p = if lookups.ContainsKey key then results.[lookups.[key]] else 1.0
+      p * 1.0<kg/(m*s^2)>
     let gradient (where: Coord) v =
+      let p = results.[lookups.[where]] * 1.0<kg/(m*s^2)>
       let neighbors = where.forwardNeighbors ()
-      let p = results.[lookups.[where]]
       let (_, v1) = neighbors.[0]
       let (_, v2) = neighbors.[1]
       let (_, v3) = neighbors.[2]
-      let n1 = if lookups.ContainsKey v1 then results.[lookups.[v1]] else 1.0
-      let n2 = if lookups.ContainsKey v2 then results.[lookups.[v2]] else 1.0
-      let n3 = if lookups.ContainsKey v3 then results.[lookups.[v3]] else 1.0
-      // TODO: this is wrong.
-      Vector3d<m/s>((p - n1) * 1.0<m/s>, (p - n2) * 1.0<m/s>, (p - n3) * 1.0<m/s>)
+      let n1 = get_result v1
+      let n2 = get_result v2
+      let n3 = get_result v3
+      Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
     Seq.iter2 (fun m result ->
                  let pressure = gradient m results
                  let c = Grid.raw_get m
@@ -213,16 +214,15 @@ module Simulator =
                   failwith (sprintf "Error: Fluid markers went outside bounds (example: %O)." m)
              ) markers
 
-  // generate a random amount of markers to begin with (testing purposes only)
+  // generate a random amount of markers to begin with (testing purposes only).
   let generate n =
     let r = System.Random()
     let h = int Constants.h
-    let l = 2
     let l = int (Constants.world_h / float32 Constants.h)
     let new_markers = [ for _ in 0..n-1 do
                         let x = r.Next(-l, l + 1) * h
                         let y = r.Next(-l, l + 1) * h
                         let z = r.Next(-l, l + 1) * h
-                        yield { x = x * 1<m>; y = y * 1<m>; z = z * 1<m>; } ]
+                        yield Coord.construct(x, y, z) ]
     markers <- Set.ofList new_markers |> Seq.toList
     update_fluid_markers ()
