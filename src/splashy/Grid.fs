@@ -139,8 +139,7 @@ module Grid =
     let vs = Seq.map (fun (d, n) -> get_shared_velocity d n) neighbors
     let v = Vector.sum vs
     let result = v .- where_v
-    // TODO: munged units
-    [result.x * 1.0<1/m^2>; result.y * 1.0<1/m^2>; result.z * 1.0<1/m^2>]
+    result .* 1.0<1/(m^2)>
 
   // for the divergence, we want to ignore velocity components between
   // fluid and solid cells

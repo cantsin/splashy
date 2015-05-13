@@ -77,9 +77,9 @@ module Simulator =
   let apply_viscosity dt =
     let const_v: float<m^2> = Constants.fluid_viscosity * dt
     let velocities = Seq.map Grid.laplacian markers
-    Seq.iter2 (fun m (result: float<1/(m*s)> list) ->
+    Seq.iter2 (fun m result ->
                  let c = Grid.raw_get m
-                 let dv = Vector3d<m/s>(result.[0] * const_v, result.[1] * const_v, result.[2] * const_v)
+                 let dv = result .* const_v
                  Grid.set m { c with velocity = c.velocity .+ dv }
                ) markers velocities
 
@@ -178,7 +178,6 @@ module Simulator =
                           let p = Vector3d<m>(m.x, m.y, m.z)
                           let c = Grid.raw_get m
                           let new_coords = p .+ (c.velocity .* dt)
-                          printfn "new coords: %O from %O; velocity is %O" new_coords m c.velocity
                           Coord.construct(int new_coords.x, int new_coords.y, int new_coords.z)
                         ) markers |> Seq.toList
 
