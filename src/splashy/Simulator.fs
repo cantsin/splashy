@@ -166,7 +166,7 @@ module Simulator =
       for (dir, neighbor) in neighbors do
         let inward = Coord.reverse dir
         match Grid.get neighbor with
-          | Some n when n.is_not_solid () ->
+          | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity ->
             Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
           | _ -> ()
 
