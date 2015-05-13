@@ -66,16 +66,8 @@ module Simulator =
   let apply_forces dt =
     let f = Constants.gravity .* dt
     for marker in markers do
-      let cell = Grid.raw_get marker
-      for direction, neighbor in marker.neighbors () do
-        let inward = Coord.reverse direction
-        match Grid.get neighbor with
-          | Some _ ->
-            if Coord.is_bordering inward f then
-              Grid.set marker { cell with velocity = cell.velocity .+ f }
-          | _ ->
-            if Aabb.contains world neighbor then
-              failwith <| sprintf "Could not get neighbor %O of %O." neighbor marker
+      let c = Grid.raw_get marker
+      Grid.set marker { c with velocity = c.velocity .+ f }
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity dt =
