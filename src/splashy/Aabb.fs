@@ -28,18 +28,18 @@ module Aabb =
        a.min_bounds.[0]; a.max_bounds.[1]; a.min_bounds.[2]; 1.0f |]
 
   // hard code indices and normals.
-  let indicesData = [| 0; 3; 2; 1;    // front face
-                       3; 2; 6; 7;    // top face
-                       7; 6; 5; 4;    // back face
-                       4; 0; 3; 7;    // left face
-                       4; 5; 1; 0;    // bottom face
-                       1; 5; 6; 2; |] // right face
+  let indices_data = [| 0; 3; 2; 1;    // front face
+                        3; 2; 6; 7;    // top face
+                        7; 6; 5; 4;    // back face
+                        4; 0; 3; 7;    // left face
+                        4; 5; 1; 0;    // bottom face
+                        1; 5; 6; 2; |] // right face
 
-  let normalData = [| -1.0f; -1.0f;  1.0f; 0.0f;
-                       1.0f; -1.0f;  1.0f; 0.0f;
-                       1.0f;  1.0f;  1.0f; 0.0f;
-                      -1.0f;  1.0f;  1.0f; 0.0f;
-                      -1.0f; -1.0f; -1.0f; 0.0f;
-                       1.0f; -1.0f; -1.0f; 0.0f;
-                       1.0f;  1.0f; -1.0f; 0.0f;
-                      -1.0f;  1.0f; -1.0f; 0.0f; |]
+  let normal_data = [| -1.0f; -1.0f;  1.0f; 0.0f;
+                        1.0f; -1.0f;  1.0f; 0.0f;
+                        1.0f;  1.0f;  1.0f; 0.0f;
+                       -1.0f;  1.0f;  1.0f; 0.0f;
+                       -1.0f; -1.0f; -1.0f; 0.0f;
+                        1.0f; -1.0f; -1.0f; 0.0f;
+                        1.0f;  1.0f; -1.0f; 0.0f;
+                       -1.0f;  1.0f; -1.0f; 0.0f; |]

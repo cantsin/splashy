@@ -111,7 +111,7 @@ module Grid =
     let x = interpolate xh (yh - 0.5) (zh - 0.5) 0
     let y = interpolate (xh - 0.5) yh (zh - 0.5) 1
     let z = interpolate (xh - 0.5) (yh - 0.5) zh 2
-    Vector3d(x, y, z)
+    Vector3d<m/s>(x, y, z)
 
   let trace (c: Coord) (t: float<s>) =
     // runge kutta order two interpolation
@@ -139,6 +139,7 @@ module Grid =
     let vs = Seq.map (fun (d, n) -> get_shared_velocity d n) neighbors
     let v = Vector.sum vs
     let result = v .- where_v
+    // TODO: munged units
     [result.x * 1.0<1/m^2>; result.y * 1.0<1/m^2>; result.z * 1.0<1/m^2>]
 
   // for the divergence, we want to ignore velocity components between
