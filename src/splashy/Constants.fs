@@ -12,10 +12,7 @@ module Constants =
   [<Literal>]
   let h_si = 10.0<m>
 
-  [<Literal>]
-  let fluid_viscosity = 0.000001 // kinematic viscosity
-  [<Literal>]
-  let fluid_viscosity_si = 0.000001<m^2/s>
+  let fluid_viscosity = 0.000001<m^2/s> // kinematic viscosity
   [<Literal>]
   let fluid_density = 999.97
   [<Literal>]
@@ -25,7 +22,7 @@ module Constants =
   [<Literal>]
   let atmospheric_pressure_si = 101300.25<kg/(m*s^2)>
 
-  let gravity = Vector3d(0.0<m/s>, -9.81<m/s>, 0.0<m/s>) // m/s^2
+  let gravity = -9.81<m/s^2>
 
   [<Literal>]
   let time_step_constant = 2.0

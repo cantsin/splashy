@@ -21,7 +21,7 @@ module Grid =
 
     member this.is_not_solid () = not (this.is_solid ())
 
-  let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d.ZERO }
+  let default_cell = { pressure = 0.0; media = Air; layer = None; velocity = Vector3d.NONE }
 
   let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
 
@@ -130,15 +130,16 @@ module Grid =
       | Some c when c.media = Fluid && Coord.is_bordering d c.velocity ->
         Coord.border d c.velocity
       | _ ->
-        Vector3d.ZERO
+        Vector3d.NONE
 
   let laplacian (where: Coord) =
     let neighbors = where.neighbors ()
     let where_v = match get where with
                     | Some c -> c.velocity .* 6.0
-                    | None -> Vector3d.ZERO
-    let v = Seq.fold (fun accum (d, n) -> accum .+ get_shared_velocity d n) Vector3d.ZERO neighbors
-    v .- where_v
+                    | None -> Vector3d.NONE
+    let v = Seq.fold (fun accum (d, n) -> accum .+ get_shared_velocity d n) Vector3d.NONE neighbors
+    let result = v .- where_v
+    [result.x * 1.0<1/m^2>; result.y * 1.0<1/m^2>; result.z * 1.0<1/m^2>]
 
   // for the divergence, we want to ignore velocity components between
   // fluid and solid cells
@@ -156,7 +157,7 @@ module Grid =
     let neighbors = where.forwardNeighbors ()
     let v = match get where with
               | Some c -> c.velocity
-              | None -> Vector3d.ZERO
+              | None -> Vector3d.NONE
     Seq.map (fun (d, n) -> get_shared_velocity' v d n) neighbors |> Seq.sum
 
   let number_neighbors fn (where: Coord) =

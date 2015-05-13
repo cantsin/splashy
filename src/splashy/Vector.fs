@@ -26,10 +26,10 @@ module Vector =
 
       static member (./) (v: Vector3d, f) = Vector3d(v.x / f, v.y / f, v.z / f)
 
-      static member ZERO = Vector3d()
+      static member NONE = Vector3d()
 
       override this.ToString () = sprintf "Vector3d[%A; %A; %A]" this.x this.y this.z
 
     end
 
-  let average v = (Seq.fold (.+) Vector3d.ZERO v) ./ float (Seq.length v)
+  let average v = (Seq.fold (.+) Vector3d.NONE v) ./ float (Seq.length v)

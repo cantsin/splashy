@@ -64,13 +64,14 @@ module Simulator =
 
   // gravity only (for now).
   let apply_forces dt =
-    let v = Constants.gravity .* dt
+    let dt = dt * 1.0<s>
+    let f = Vector3d(0.0<m/s>, Constants.gravity * dt, 0.0<m/s>)
     Seq.iter (fun (m: Coord) ->
                 for direction, neighbor in m.neighbors () do
                   match Grid.get neighbor with
                     | Some c ->
-                      if c.media = Fluid && Coord.is_bordering direction v then
-                        Grid.set neighbor { c with velocity = c.velocity .+ v }
+                      if c.media = Fluid && Coord.is_bordering direction f then
+                        Grid.set neighbor { c with velocity = c.velocity .+ f }
                     | _ ->
                       if Aabb.contains world neighbor then
                         failwith <| sprintf "Could not get neighbor %O of %O." neighbor m
@@ -78,11 +79,13 @@ module Simulator =
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity dt =
-    let const_v = Constants.fluid_viscosity * dt
+    let dt = dt * 1.0<s>
+    let const_v: float<m^2> = Constants.fluid_viscosity * dt
     let velocities = Seq.map Grid.laplacian markers
-    Seq.iter2 (fun m v ->
+    Seq.iter2 (fun m (result: float<1/(m*s)> list) ->
                  let c = Grid.raw_get m
-                 Grid.set m { c with velocity = c.velocity .+ (v .* const_v) }
+                 let dv = Vector3d(result.[0] * const_v, result.[1] * const_v, result.[2] * const_v)
+                 Grid.set m { c with velocity = c.velocity .+ dv }
                ) markers velocities
 
   // set the pressure such that the divergence throughout the fluid is zero.
@@ -170,7 +173,7 @@ module Simulator =
                   let inward = Coord.reverse dir
                   match Grid.get neighbor with
                     | Some n when n.is_not_solid () ->
-                      Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
+                      Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.NONE }
                     | _ -> ()
               ) solids
 
