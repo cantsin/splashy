@@ -11,28 +11,33 @@ module Coord =
 
   type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
 
-  //[<CustomEquality;CustomComparison>]
+  [<CustomEquality>]
+  [<CustomComparison>]
   type Coord =
     { x: int<m>; y: int<m>; z: int<m>; }
 
-    // override this.GetHashCode () =
-    //   541 * this.x + 79 * this.y + 31 * this.z
+    override this.GetHashCode () =
+      541 * int this.x + 79 * int this.y + 31 * int this.z
 
-    // override this.Equals that =
-    //   match that with
-    //     | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
-    //     | _ -> false
+    override this.Equals that =
+      match that with
+        | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
+        | _ -> false
 
-    // interface System.IComparable with
-    //   member this.CompareTo that =
-    //     match that with
-    //       | :? Coord as c -> compare this c
-    //       | _ -> invalidArg "Coord" "cannot compare values of different types."
+    // we only care about equality here.
+    static member compare v1 v2 = if v1 = v2 then 0 else 1
+
+    interface System.IComparable with
+      member this.CompareTo that =
+        match that with
+          | :? Coord as c -> Coord.compare this c
+          | _ -> invalidArg "Coord" "cannot compare values of different types."
 
     static member construct(x: int, y: int, z:int) =
       { x = x * 1<m>; y = y * 1<m>; z = z * 1<m>; }
 
-    // NB. round only works on dimensionless floats, so do a raw conversion from float<m> to int<m>
+    // NB. round only works on dimensionless floats, so do a raw
+    // conversion from float<m> to int<m>.
     static member construct(x: float<m>, y: float<m>, z:float<m>) =
       let to_int x = float x |> round |> int
       { x = to_int x * 1<m>; y = to_int y * 1<m>; z = to_int z * 1<m>; }
