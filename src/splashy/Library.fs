@@ -20,16 +20,16 @@ type Splashy() =
 
   do base.VSync <- VSyncMode.On
 
-  let vertexFile = "src/splashy/shaders/simple.vert"
-  let fragmentFile = "src/splashy/shaders/simple.frag"
+  let vertex_file = "src/splashy/shaders/simple.vert"
+  let fragment_file = "src/splashy/shaders/simple.frag"
 
-  let mutable vertexShader = 0
-  let mutable fragmentShader = 0
+  let mutable vertex_shader = 0
+  let mutable fragment_shader = 0
   let mutable program = 0
 
-  let mutable projectionLocation = 0
-  let mutable modelViewLocation = 0
-  let mutable vertexLocation = 0 // allow VAOs to set their own matrix transform
+  let mutable projection_location = 0
+  let mutable model_view_location = 0
+  let mutable vertex_location = 0 // allow VAOs to set their own matrix transform
 
   let mutable time = 0.0f
   let mutable pressed = false // don't rush through simulation
@@ -37,7 +37,7 @@ type Splashy() =
   let eye = Vector3(0.0f, 0.0f, -400.0f)
 
   // drawables.
-  let worldBounds = new AreaBounds () // fixed, does not change
+  let world_bounds = new AreaBounds () // fixed, does not change
   let mutable drawables = []
   let mutable cells = []
 
@@ -57,24 +57,24 @@ type Splashy() =
       cell.prepare program
 
     // world bound needs to be drawn last (transparency reasons)
-    drawables <- cells @ [(worldBounds :> IDrawable)]
+    drawables <- cells @ [(world_bounds :> IDrawable)]
 
   override o.OnLoad e =
 
-    vertexShader <-
+    vertex_shader <-
       let shader = GL.CreateShader(ShaderType.VertexShader)
-      GL.ShaderSource(shader, File.ReadAllText vertexFile)
+      GL.ShaderSource(shader, File.ReadAllText vertex_file)
       GL.CompileShader(shader)
       shader
-    fragmentShader <-
+    fragment_shader <-
       let shader = GL.CreateShader(ShaderType.FragmentShader)
-      GL.ShaderSource(shader, File.ReadAllText fragmentFile)
+      GL.ShaderSource(shader, File.ReadAllText fragment_file)
       GL.CompileShader(shader)
       shader
     program <-
       let program = GL.CreateProgram()
-      GL.AttachShader(program, vertexShader)
-      GL.AttachShader(program, fragmentShader)
+      GL.AttachShader(program, vertex_shader)
+      GL.AttachShader(program, fragment_shader)
       GL.LinkProgram(program)
       program
 
@@ -84,9 +84,9 @@ type Splashy() =
       failwith (sprintf "Shader compilation failed:\n%A" s)
     GL.UseProgram(program)
 
-    projectionLocation <- GL.GetUniformLocation(program, "projectionMatrix")
-    modelViewLocation <- GL.GetUniformLocation(program, "modelViewMatrix")
-    vertexLocation <- GL.GetUniformLocation(program, "vertex_mat")
+    projection_location <- GL.GetUniformLocation(program, "projectionMatrix")
+    model_view_location <- GL.GetUniformLocation(program, "modelViewMatrix")
+    vertex_location <- GL.GetUniformLocation(program, "vertex_mat")
 
     // set other GL states.
     GL.Enable(EnableCap.DepthTest)
@@ -95,15 +95,15 @@ type Splashy() =
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
     refresh_drawables ()
-    (worldBounds :> IDrawable).prepare program
+    (world_bounds :> IDrawable).prepare program
 
     base.OnLoad e
 
   override o.OnUnload(e) =
     GL.UseProgram(0)
     GL.DeleteProgram(program)
-    GL.DeleteShader(vertexShader)
-    GL.DeleteShader(fragmentShader)
+    GL.DeleteShader(vertex_shader)
+    GL.DeleteShader(fragment_shader)
     for drawable in drawables do
       drawable.destroy ()
     base.OnUnload e
@@ -119,8 +119,8 @@ type Splashy() =
                                                                   1.0f,
                                                                   640.0f)
     let mutable lookat = Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
-    GL.UniformMatrix4(projectionLocation, false, &projection)
-    GL.UniformMatrix4(modelViewLocation, false, &lookat)
+    GL.UniformMatrix4(projection_location, false, &projection)
+    GL.UniformMatrix4(model_view_location, false, &lookat)
 
   override o.OnKeyDown e =
     match e.Key with
@@ -128,7 +128,7 @@ type Splashy() =
       | Key.Right ->
         if not pressed then
           try
-            Simulator.advance ()
+            Simulator.advance 0.016671 // 30fps
             refresh_drawables ()
             pressed <- true
           with
@@ -148,10 +148,10 @@ type Splashy() =
     time <- time + (float32)e.Time
     let rot = Matrix4.CreateRotationY(time)
     let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
-    GL.UniformMatrix4(modelViewLocation, false, &lookat)
+    GL.UniformMatrix4(model_view_location, false, &lookat)
 
     try
-      Simulator.advance ()
+      Simulator.advance e.Time
       refresh_drawables ()
     with
       | exn ->
@@ -159,7 +159,7 @@ type Splashy() =
         base.Close()
 
     for drawable in drawables do
-      drawable.render vertexLocation
+      drawable.render vertex_location
 
     let code = GL.GetError ()
     if code <> ErrorCode.NoError then

@@ -184,9 +184,9 @@ module Simulator =
                           Coord.construct(int new_coords.x, int new_coords.y, int new_coords.z)
                         ) markers |> Seq.toList
 
-  let advance () =
-    printfn "Moving simulation forward with time step %A." Constants.time_step
-    let dt = Constants.time_step
+  let advance dt =
+    let dt = dt * 1.0<s> // Constants.time_step
+    printfn "Moving simulation forward with time step %A." dt
     Grid.setup (fun () ->
       printfn "  Setup: Updating fluid markers."
       update_fluid_markers ()
