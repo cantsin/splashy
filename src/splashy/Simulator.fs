@@ -65,10 +65,11 @@ module Simulator =
     let f = Vector3d<m/s>(0.0<m/s>, Constants.gravity * dt, 0.0<m/s>)
     for marker in markers do
       for direction, neighbor in marker.neighbors () do
+        let inward = Coord.reverse direction
         match Grid.get neighbor with
           | Some c ->
-            if c.media = Fluid && Coord.is_bordering direction f then
-              Grid.set neighbor { c with velocity = c.velocity .+ f }
+            if Coord.is_bordering inward f then
+              Grid.set marker { c with velocity = c.velocity .+ f }
           | _ ->
             if Aabb.contains world neighbor then
               failwith <| sprintf "Could not get neighbor %O of %O." neighbor marker
@@ -118,8 +119,10 @@ module Simulator =
     // apply pressure only to borders of fluid cells.
     let inv_c = 1.0 / c
     let get_result key =
-      let p = if lookups.ContainsKey key then results.[lookups.[key]] else 1.0
-      p * 1.0<kg/(m*s^2)>
+      if lookups.ContainsKey key then
+        results.[lookups.[key]] * 1.0<kg/(m*s^2)>
+      else
+        Constants.atmospheric_pressure
     let gradient (where: Coord) v =
       let p = results.[lookups.[where]] * 1.0<kg/(m*s^2)>
       let neighbors = where.forwardNeighbors ()
@@ -135,7 +138,6 @@ module Simulator =
                  let c = Grid.raw_get m
                  Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
                ) markers results
-
 
   // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =

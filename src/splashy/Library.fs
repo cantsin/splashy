@@ -150,6 +150,14 @@ type Splashy() =
     let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(modelViewLocation, false, &lookat)
 
+    try
+      Simulator.advance ()
+      refresh_drawables ()
+    with
+      | exn ->
+        printfn "Exception! %A" exn.Message
+        base.Close()
+
     for drawable in drawables do
       drawable.render vertexLocation
 
@@ -165,7 +173,7 @@ type Splashy() =
 module Library =
   let splashy = new Splashy()
   let version = GL.GetString(StringName.Version)
-  let N = 100
+  let N = 10
   printfn "GL version: %A" version
   printfn "Generating %d random markers" N
   Simulator.generate N
