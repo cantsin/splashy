@@ -33,13 +33,18 @@ module Coord =
           | :? Coord as c -> Coord.compare this c
           | _ -> invalidArg "Coord" "cannot compare values of different types."
 
+    static member nearest n =
+      let h = int Constants.h
+      let r = n % h
+      if r >= (h / 2) then n + (h - r) else n - r
+
     static member construct(x: int, y: int, z:int) =
-      { x = x * 1<m>; y = y * 1<m>; z = z * 1<m>; }
+      { x = Coord.nearest x * 1<m>; y = Coord.nearest y * 1<m>; z = Coord.nearest z * 1<m>; }
 
     // NB. round only works on dimensionless floats, so do a raw
     // conversion from float<m> to int<m>.
     static member construct(x: float<m>, y: float<m>, z:float<m>) =
-      let to_int x = float x |> round |> int
+      let to_int x = float x |> round |> int |> Coord.nearest
       { x = to_int x * 1<m>; y = to_int y * 1<m>; z = to_int z * 1<m>; }
 
     member this.neighbors () =

@@ -125,7 +125,7 @@ module Simulator =
         results.[lookups.[key]] * 1.0<kg/(m*s^2)>
       else
         Constants.atmospheric_pressure
-    let gradient (where: Coord) v =
+    let gradient (where: Coord) =
       let p = results.[lookups.[where]] * 1.0<kg/(m*s^2)>
       let neighbors = where.forward_neighbors ()
       let (_, v1) = neighbors.[0]
@@ -135,11 +135,11 @@ module Simulator =
       let n2 = get_result v2
       let n3 = get_result v3
       Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
-    Seq.iter2 (fun m result ->
-                 let pressure = gradient m results
-                 let c = Grid.raw_get m
-                 Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
-               ) markers results
+    Seq.iter (fun m ->
+                let c = Grid.raw_get m
+                let pressure = gradient m
+                Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
+              ) markers
 
   // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =
