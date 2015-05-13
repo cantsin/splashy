@@ -39,13 +39,14 @@ module Coord =
       if r >= (h / 2) then n + (h - r) else n - r
 
     static member construct(x: int, y: int, z:int) =
-      { x = Coord.nearest x * 1<m>; y = Coord.nearest y * 1<m>; z = Coord.nearest z * 1<m>; }
+      let to_nearest x = Coord.nearest x * 1<m>
+      { x = to_nearest x; y = to_nearest y; z = to_nearest z; }
 
     // NB. round only works on dimensionless floats, so do a raw
     // conversion from float<m> to int<m>.
     static member construct(x: float<m>, y: float<m>, z:float<m>) =
-      let to_int x = float x |> round |> int |> Coord.nearest
-      { x = to_int x * 1<m>; y = to_int y * 1<m>; z = to_int z * 1<m>; }
+      let to_nearest_int x = float x |> round |> int |> Coord.nearest |> fun n -> n * 1<m>
+      { x = to_nearest_int x; y = to_nearest_int y; z = to_nearest_int z; }
 
     member this.neighbors () =
       let h = int Constants.h * 1<m>

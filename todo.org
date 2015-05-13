@@ -13,6 +13,8 @@
 * simulation [1/1]
 ** DONE look at Microsoft.FSharp.Math (sparse matrix solver?)
 - http://tomasp.net/blog/powerpack-matrix.aspx/
-* bugs [2/2]
+* bugs [2/4]
 ** DONE positions should be locked by Constants.h
 ** DONE water aabb disappears after a while
+** TODO prevent water from falling through the world
+** TODO why are solids alternately created/destroyed?

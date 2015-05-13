@@ -27,7 +27,7 @@ module Aabb =
        a.max_bounds.[0]; a.max_bounds.[1]; a.min_bounds.[2]; 1.0f;
        a.min_bounds.[0]; a.max_bounds.[1]; a.min_bounds.[2]; 1.0f |]
 
-  // try to prevent plane overlap.
+  // hack to prevent plane overlap (flickering) by shrinking the aabb.
   let fudge a =
     { min_bounds = a.min_bounds + Vector3(0.1f, 0.1f, 0.1f);
       max_bounds = a.max_bounds - Vector3(0.1f, 0.1f, 0.1f); }
