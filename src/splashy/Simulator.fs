@@ -1,7 +1,7 @@
 namespace splashy
 
 open MathNet.Numerics.LinearAlgebra
-
+open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic
 
 open Constants
@@ -107,7 +107,8 @@ module Simulator =
                        let f = Grid.divergence m
                        let a = Grid.number_neighbors (fun c -> c.media = Air) m
                        let s = Constants.atmospheric_pressure
-                       c * f - s * a
+                       let result = c * f - (s * a * 1.0<m/s>)
+                       result * 1.0<s/m>
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
@@ -122,7 +123,7 @@ module Simulator =
       let n1 = if lookups.ContainsKey v1 then results.[lookups.[v1]] else 1.0
       let n2 = if lookups.ContainsKey v2 then results.[lookups.[v2]] else 1.0
       let n3 = if lookups.ContainsKey v3 then results.[lookups.[v3]] else 1.0
-      Vector3d(p - n1, p - n2, p - n3)
+      Vector3d((p - n1) * 1.0<m/s>, (p - n2) * 1.0<m/s>, (p - n3) * 1.0<m/s>)
     Seq.iter2 (fun m result ->
                  let pressure = gradient m results
                  let c = Grid.raw_get m

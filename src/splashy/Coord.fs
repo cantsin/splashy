@@ -1,5 +1,7 @@
 namespace splashy
 
+open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
+
 open OpenTK
 
 open Constants
@@ -31,7 +33,7 @@ module Coord =
       Vector3(float32 this.x, float32 this.y, float32 this.z)
 
     member this.to_vector3d () =
-      Vector3d(float this.x, float this.y, float this.z)
+      Vector3d(float this.x * 1.0<m/s>, float this.y * 1.0<m/s>, float this.z * 1.0<m/s>)
 
     member this.neighbors () =
       let h = int Constants.h
@@ -67,19 +69,19 @@ module Coord =
 
   let is_bordering d (v: Vector3d) =
     match d with
-      | NegX when v.x < 0.0 -> true
-      | PosX when v.x > 0.0 -> true
-      | NegY when v.y < 0.0 -> true
-      | PosY when v.y > 0.0 -> true
-      | NegZ when v.z < 0.0 -> true
-      | PosZ when v.z > 0.0 -> true
+      | NegX when v.x < 0.0<m/s> -> true
+      | PosX when v.x > 0.0<m/s> -> true
+      | NegY when v.y < 0.0<m/s> -> true
+      | PosY when v.y > 0.0<m/s> -> true
+      | NegZ when v.z < 0.0<m/s> -> true
+      | PosZ when v.z > 0.0<m/s> -> true
       | _ -> false
 
   let border d (v: Vector3d) =
     match d with
-      | NegX | PosX -> Vector3d(v.x, 0.0, 0.0)
-      | NegY | PosY -> Vector3d(0.0, v.y, 0.0)
-      | NegZ | PosZ -> Vector3d(0.0, 0.0, v.z)
+      | NegX | PosX -> Vector3d(v.x, 0.0<m/s>, 0.0<m/s>)
+      | NegY | PosY -> Vector3d(0.0<m/s>, v.y, 0.0<m/s>)
+      | NegZ | PosZ -> Vector3d(0.0<m/s>, 0.0<m/s>, v.z)
 
   let merge d (old_v: Vector3d) (new_v: Vector3d) =
     match d with

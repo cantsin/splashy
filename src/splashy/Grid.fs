@@ -1,6 +1,7 @@
 namespace splashy
 
 open System.Collections.Generic
+open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 
 open Constants
 open Vector
@@ -100,7 +101,7 @@ module Grid =
                 let c = { x = ii + x'; y = jj + y'; z = kk + z' }
                 match get_velocity_index c index with
                   | Some v -> yield (v * id.[x'] * jd.[y'] * kd.[z'])
-                  | None -> yield 0.0]
+                  | None -> yield 0.0<m/s>]
     Seq.sum sums
 
   let internal get_interpolated_velocity x y z =
@@ -121,7 +122,7 @@ module Grid =
     let z = cv.z + 0.5 * t * v.z
     let dv = get_interpolated_velocity x y z
     let p = cv .+ (dv .* t)
-    let to_int x = round x |> int
+    let to_int x = round (x * 1.0<s/m>) |> int
     { x = to_int p.x; y = to_int p.y; z = to_int p.z }
 
   let internal get_shared_velocity d n =
@@ -149,7 +150,7 @@ module Grid =
         let result = nv .- cv
         result.x + result.y + result.z
       | _ ->
-        0.0
+        0.0<m/s>
 
   let divergence (where: Coord) =
     let neighbors = where.forwardNeighbors ()
