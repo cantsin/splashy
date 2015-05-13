@@ -2,6 +2,8 @@ namespace splashy
 
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 
+open OpenTK
+
 open Vector
 open Aabb
 
@@ -39,6 +41,6 @@ module Constants =
   let time_step_si: float<s> = time_step_constant * h_si / max_velocity_si
 
   // the world bounding box.
-  let bounds_h = 100.0 + h / 2.0
-  let bounds = { min_bounds = Vector3d(-bounds_h, -bounds_h, -bounds_h);
-                 max_bounds = Vector3d( bounds_h,  bounds_h,  bounds_h) }
+  let bounds_h = 100.0f + (float32 h) / 2.0f
+  let bounds = { min_bounds = Vector3(-bounds_h, -bounds_h, -bounds_h);
+                 max_bounds = Vector3( bounds_h,  bounds_h,  bounds_h) }

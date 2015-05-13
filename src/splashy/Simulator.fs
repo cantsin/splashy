@@ -21,7 +21,7 @@ module Simulator =
                   | Some c when c.is_not_solid () ->
                       Grid.set m { c with media = Fluid; layer = Some 0; }
                   | None ->
-                      if Aabb.contains Constants.bounds (m.to_vector ()) then
+                      if Aabb.contains Constants.bounds (m.to_vector3 ()) then
                         Grid.add m { Grid.default_cell with media = Fluid; layer = Some 0; }
                   | _ -> ()
               ) markers
@@ -37,7 +37,7 @@ module Simulator =
                     | Some c when c.is_not_solid () && c.layer = None ->
                         Grid.set where { c with media = Air; layer = Some i }
                     | None ->
-                        if Aabb.contains Constants.bounds (where.to_vector ()) then
+                        if Aabb.contains Constants.bounds (where.to_vector3 ()) then
                           Grid.add where { Grid.default_cell with media = Air; layer = Some i }
                         else
                           Grid.add where { Grid.default_cell with media = Solid; layer = Some i }
@@ -67,7 +67,7 @@ module Simulator =
                       if c.media = Fluid && Coord.is_bordering direction v then
                         Grid.set neighbor { c with velocity = c.velocity .+ v }
                     | _ ->
-                      if Aabb.contains Constants.bounds (neighbor.to_vector ()) then
+                      if Aabb.contains Constants.bounds (neighbor.to_vector3 ()) then
                         failwith <| sprintf "Could not get neighbor %O of %O." neighbor m
               ) markers
 
@@ -171,7 +171,7 @@ module Simulator =
   let move_markers dt =
     // for now, advance by frame.
     markers <- Seq.map (fun (marker: Coord) ->
-                          let p = marker.to_vector ()
+                          let p = marker.to_vector3d ()
                           let c = Grid.raw_get marker
                           let new_coords = p .+ (c.velocity .* dt)
                           { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
@@ -205,7 +205,7 @@ module Simulator =
     move_markers dt
     // sanity check.
     Seq.iter (fun (m: Coord) ->
-                if not (Aabb.contains Constants.bounds (m.to_vector ())) then
+                if not (Aabb.contains Constants.bounds (m.to_vector3 ())) then
                   failwith (sprintf "Error: Fluid markers went outside bounds (example: %O)." m)
              ) markers
 
@@ -213,8 +213,8 @@ module Simulator =
   let generate n =
     let r = System.Random()
     let h = int Constants.h
-    let l = int (Constants.bounds_h / Constants.h)
     let l = 2
+    let l = int (Constants.bounds_h / float32 Constants.h)
     let new_markers = [ for _ in 0..n-1 do
                         let x = r.Next(-l, l + 1) * h
                         let y = r.Next(-l, l + 1) * h

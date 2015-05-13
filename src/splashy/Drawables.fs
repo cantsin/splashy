@@ -20,7 +20,7 @@ type IDrawable =
 // encapsulate GL calls to draw the bounding area, markers, and cells.
 module Drawables =
 
-  let internal prepare_aabb (program: int) colorData (data: float []) =
+  let internal prepare_aabb (program: int) colorData (data: float32 []) =
     let vao =
       let array = GL.GenVertexArray()
       GL.BindVertexArray(array)
@@ -31,10 +31,10 @@ module Drawables =
       GL.BindBuffer(BufferTarget.ArrayBuffer, buffer)
       buffer
     let vertexPosition = GL.GetAttribLocation(program, "vertex_position")
-    let n = sizeof<float>
+    let n = sizeof<float32>
     GL.BufferData(BufferTarget.ArrayBuffer, nativeint(data.Length * n), data, BufferUsageHint.StaticDraw)
     GL.EnableVertexAttribArray(vertexPosition)
-    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Double, false, n * 4, 0)
+    GL.VertexAttribPointer(vertexPosition, 4, VertexAttribPointerType.Float, false, n * 4, 0)
     GL.BindAttribLocation(program, vertexPosition, "vertex_position")
 
     let normals =
@@ -102,9 +102,9 @@ module Drawables =
     let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
     let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
     let air_color = [|1.0f; 1.0f; 1.0f; 0.01f|]
-    let l = Constants.h / 2.0
-    let cell_bounds = { min_bounds = Vector.Vector3d(-l, -l, -l);
-                        max_bounds = Vector.Vector3d( l,  l,  l) }
+    let l = float32 Constants.h / 2.0f
+    let cell_bounds = { min_bounds = Vector3(-l, -l, -l);
+                        max_bounds = Vector3( l,  l,  l) }
     interface IDrawable with
       member this.prepare p =
         let color = match cell.media with

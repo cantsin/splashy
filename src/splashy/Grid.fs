@@ -114,7 +114,7 @@ module Grid =
 
   let trace (c: Coord) t =
     // runge kutta order two interpolation
-    let cv = c.to_vector ()
+    let cv = c.to_vector3d ()
     let v = get_interpolated_velocity cv.x cv.y cv.z
     let x = cv.x + 0.5 * t * v.x
     let y = cv.y + 0.5 * t * v.y

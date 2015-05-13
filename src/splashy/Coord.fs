@@ -1,5 +1,7 @@
 namespace splashy
 
+open OpenTK
+
 open Constants
 open Vector
 
@@ -25,7 +27,10 @@ module Coord =
     //       | :? Coord as c -> compare this c
     //       | _ -> invalidArg "Coord" "cannot compare values of different types."
 
-    member this.to_vector () =
+    member this.to_vector3 () =
+      Vector3(float32 this.x, float32 this.y, float32 this.z)
+
+    member this.to_vector3d () =
       Vector3d(float this.x, float this.y, float this.z)
 
     member this.neighbors () =
