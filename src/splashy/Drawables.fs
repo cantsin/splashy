@@ -99,7 +99,7 @@ module Drawables =
                        | Fluid -> fluid_color
                        | Solid -> solid_color
                        | Air -> air_color
-        let new_vao = prepare_aabb p color (Aabb.raw_data cell_bounds)
+        let new_vao = prepare_aabb p color (Aabb.raw_data <| Aabb.fudge cell_bounds)
         vao <- new_vao
       member this.render location =
         let mutable m = Matrix4.CreateTranslation(transform)
