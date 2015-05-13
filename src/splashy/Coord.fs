@@ -32,6 +32,11 @@ module Coord =
     static member construct(x: int, y: int, z:int) =
       { x = x * 1<m>; y = y * 1<m>; z = z * 1<m>; }
 
+    // NB. round only works on dimensionless floats, so do a raw conversion from float<m> to int<m>
+    static member construct(x: float<m>, y: float<m>, z:float<m>) =
+      let to_int x = float x |> round |> int
+      { x = to_int x * 1<m>; y = to_int y * 1<m>; z = to_int z * 1<m>; }
+
     member this.neighbors () =
       let h = int Constants.h * 1<m>
       [| PosX, { this with x = this.x + h };

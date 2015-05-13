@@ -62,7 +62,7 @@ module Simulator =
 
   // gravity only (for now).
   let apply_forces dt =
-    let f = Vector3d<m/s>(0.0<m/s>, Constants.gravity * dt, 0.0<m/s>)
+    let f = Constants.gravity .* dt
     for marker in markers do
       for direction, neighbor in marker.neighbors () do
         let inward = Coord.reverse direction
@@ -178,14 +178,14 @@ module Simulator =
   let move_markers dt =
     // for now, advance by frame.
     markers <- Seq.map (fun (m: Coord) ->
-                          let p = Vector3d<m>(m.x, m.y, m.z)
                           let c = Grid.raw_get m
+                          let p = Vector3d<m>(m.x, m.y, m.z)
                           let new_coords = p .+ (c.velocity .* dt)
-                          Coord.construct(int new_coords.x, int new_coords.y, int new_coords.z)
+                          Coord.construct(new_coords.x, new_coords.y, new_coords.z)
                         ) markers |> Seq.toList
 
   let advance dt =
-    let dt = dt * 1.0<s> // Constants.time_step
+    let dt = dt * Constants.time_step
     printfn "Moving simulation forward with time step %A." dt
     Grid.setup (fun () ->
       printfn "  Setup: Updating fluid markers."

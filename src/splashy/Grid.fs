@@ -120,9 +120,7 @@ module Grid =
     let nv = cv .+ (v .* (t / 2.0))
     let dv = get_interpolated_velocity nv.x nv.y nv.z
     let p = cv .+ (dv .* t)
-    // NB. round only works on dimensionless floats, so do a raw conversion from float<m> to int<m>
-    let to_int x = float x |> round |> int
-    Coord.construct(to_int p.x, to_int p.y, to_int p.z)
+    Coord.construct(p.x, p.y, p.z)
 
   let internal get_shared_velocity d n =
     match get n with

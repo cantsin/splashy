@@ -9,7 +9,7 @@ module Constants =
 
   [<Literal>]
   let h = 10.0<m>
-
+  [<Literal>]
   let fluid_viscosity = 0.000001<m^2/s> // kinematic viscosity
   [<Literal>]
   let fluid_density = 999.97<kg/m^3>
@@ -18,9 +18,9 @@ module Constants =
   [<Literal>]
   let max_velocity = 2.5<m/s>
   [<Literal>]
-  let gravity = -9.81<m/s^2>
-  [<Literal>]
   let time_step_constant = 2.0
+
+  let gravity = Vector3d<m/s^2>(0.0<m/s^2>, -9.81<m/s^2>, 0.0<m/s^2>)
 
   // pre-calculated.
   let time_step: float<s> = time_step_constant * h / max_velocity
