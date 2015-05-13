@@ -13,7 +13,7 @@ module Grid =
 
   type Cell =
     { media: Media;
-      velocity: Vector3d<m/s>; // from the minimal faces, not the center
+      velocity: Vector3d<m/s>; // from the minimal faces, not the center.
       pressure: float<kg/(m*s^2)>;
       layer: Option<int>; }
 
@@ -94,7 +94,7 @@ module Grid =
     let id = [i - x + 1.0; x - i]
     let jd = [j - y + 1.0; y - j]
     let kd = [k - z + 1.0; z - k]
-    // trilinear interpolation
+    // trilinear interpolation.
     let sums = [for x' in 0..1 do
                 for y' in 0..1 do
                 for z' in 0..1 do
@@ -114,7 +114,7 @@ module Grid =
     Vector3d<m/s>(x, y, z)
 
   let trace (c: Coord) (t: float<s>) =
-    // runge kutta order two interpolation
+    // runge kutta order two interpolation.
     let cv = Vector3d<m>(c.x, c.y, c.z)
     let v = get_interpolated_velocity cv.x cv.y cv.z
     let nv = cv .+ (v .* (t / 2.0))
@@ -140,7 +140,7 @@ module Grid =
     result .* 1.0<1/(m^2)>
 
   // for the divergence, we want to ignore velocity components between
-  // fluid and solid cells
+  // fluid and solid cells.
   let internal get_shared_velocity' v d n =
     match get n with
       | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
@@ -152,7 +152,7 @@ module Grid =
         0.0<m/s>
 
   let divergence (where: Coord) =
-    let neighbors = where.forwardNeighbors ()
+    let neighbors = where.forward_neighbors ()
     let v = match get where with
               | Some c -> c.velocity
               | None -> Vector3d.ZERO

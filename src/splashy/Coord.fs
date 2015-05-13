@@ -13,7 +13,7 @@ module Coord =
 
   //[<CustomEquality;CustomComparison>]
   type Coord =
-    { x: int<m>; y: int<m>; z: int<m> }
+    { x: int<m>; y: int<m>; z: int<m>; }
 
     // override this.GetHashCode () =
     //   541 * this.x + 79 * this.y + 31 * this.z
@@ -46,13 +46,13 @@ module Coord =
          PosZ, { this with z = this.z + h };
          NegZ, { this with z = this.z - h }; |]
 
-    member this.backwardNeighbors () =
+    member this.backward_neighbors () =
       let h = int Constants.h * 1<m>
       [| NegX, { this with x = this.x - h };
          NegY, { this with y = this.y - h };
          NegZ, { this with z = this.z - h }; |]
 
-    member this.forwardNeighbors () =
+    member this.forward_neighbors () =
       let h = int Constants.h * 1<m>
       [| PosX, { this with x = this.x + h };
          PosY, { this with y = this.y + h };

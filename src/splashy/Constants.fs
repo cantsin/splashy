@@ -10,11 +10,11 @@ module Constants =
   [<Literal>]
   let h = 10.0<m>
   [<Literal>]
-  let fluid_viscosity = 0.000001<m^2/s> // kinematic viscosity
+  let fluid_viscosity = 0.000001<m^2/s> // kinematic viscosity.
   [<Literal>]
   let fluid_density = 999.97<kg/m^3>
   [<Literal>]
-  let atmospheric_pressure = 1013.25<kg/(m*s^2)> // hectopascals
+  let atmospheric_pressure = 1013.25<kg/(m*s^2)> // in hectopascals.
   [<Literal>]
   let max_velocity = 2.5<m/s>
   [<Literal>]

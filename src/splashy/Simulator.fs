@@ -13,7 +13,9 @@ open Grid
 
 module Simulator =
 
+  // store information about the water particles: their integer coordinates and floating positions.
   let mutable markers: Coord list = []
+  let mutable locations: Vector3d<m> list = []
 
   // the world bounding box.
   let world = { min_bounds = Vector3(-Constants.world_h, -Constants.world_h, -Constants.world_h);
@@ -125,7 +127,7 @@ module Simulator =
         Constants.atmospheric_pressure
     let gradient (where: Coord) v =
       let p = results.[lookups.[where]] * 1.0<kg/(m*s^2)>
-      let neighbors = where.forwardNeighbors ()
+      let neighbors = where.forward_neighbors ()
       let (_, v1) = neighbors.[0]
       let (_, v2) = neighbors.[1]
       let (_, v3) = neighbors.[2]
@@ -177,12 +179,12 @@ module Simulator =
 
   let move_markers dt =
     // for now, advance by frame.
-    markers <- Seq.map (fun (m: Coord) ->
-                          let c = Grid.raw_get m
-                          let p = Vector3d<m>(m.x, m.y, m.z)
-                          let new_coords = p .+ (c.velocity .* dt)
-                          Coord.construct(new_coords.x, new_coords.y, new_coords.z)
-                        ) markers |> Seq.toList
+    locations <- Seq.map (fun (l: Vector3d<m>) ->
+                            let m = Coord.construct(l.x, l.y, l.z)
+                            let c = Grid.raw_get m
+                            l .+ (c.velocity .* dt)
+                          ) locations |> Seq.toList
+    markers <- Seq.map (fun (l: Vector3d<m>) -> Coord.construct(l.x, l.y, l.z)) locations |> Seq.toList
 
   let advance dt =
     let dt = dt * Constants.time_step
@@ -227,4 +229,6 @@ module Simulator =
                         let z = r.Next(-l, l + 1) * h
                         yield Coord.construct(x, y, z) ]
     markers <- Set.ofList new_markers |> Seq.toList
+    let to_vec m = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
+    locations <- Seq.map to_vec markers |> Seq.toList
     update_fluid_markers ()
