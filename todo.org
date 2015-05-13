@@ -1,21 +1,7 @@
 * sources and sinks [0/1]
 ** TODO implement source
-* simulation [5/6]
-** DONE backwards particle trace
-** DONE runge kutta order 2 interpolation for trace
-** DONE viscosity
-** DONE pressure
-** DONE time step vs frame by frame
-** TODO simulation is still not correct
-* graphics [1/2]
+* graphics [0/2]
 ** TODO implement camera
-** DONE transparency?
-* simulation [1/1]
-** DONE look at Microsoft.FSharp.Math (sparse matrix solver?)
-- http://tomasp.net/blog/powerpack-matrix.aspx/
-* bugs [5/5]
-** DONE positions should be locked by Constants.h
-** DONE water aabb disappears after a while
-** DONE prevent water from falling through the world
-** DONE why are solids alternately created/destroyed?
-** DONE water markers can get stuck at the very top
+** TODO proper transparency – sorting back-to-front?
+* bugs [0/1]
+** TODO water collision
