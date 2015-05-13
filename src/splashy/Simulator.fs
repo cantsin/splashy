@@ -51,7 +51,6 @@ module Simulator =
 
   // convection by means of a backwards particle trace.
   let apply_convection dt =
-    let dt = dt * 1.0<s>
     let new_velocities = Seq.map (fun m ->
                                     let new_position = trace m dt
                                     match Grid.get new_position with
@@ -65,7 +64,6 @@ module Simulator =
 
   // gravity only (for now).
   let apply_forces dt =
-    let dt = dt * 1.0<s>
     let f = Vector3d<m/s>(0.0<m/s>, Constants.gravity * dt, 0.0<m/s>)
     Seq.iter (fun (m: Coord) ->
                 for direction, neighbor in m.neighbors () do
@@ -80,7 +78,6 @@ module Simulator =
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
   let apply_viscosity dt =
-    let dt = dt * 1.0<s>
     let const_v: float<m^2> = Constants.fluid_viscosity * dt
     let velocities = Seq.map Grid.laplacian markers
     Seq.iter2 (fun m (result: float<1/(m*s)> list) ->
@@ -116,13 +113,14 @@ module Simulator =
                        let f = Grid.divergence m
                        let a = Grid.number_neighbors (fun c -> c.media = Air) m
                        let s = Constants.atmospheric_pressure
-                       let result = c * f - (s * a * 1.0<m/s>)
-                       result * 1.0<s/m>
+                       let result: float<kg/(m*s^2)> = c * f - (s * a)
+                       float result
                      ) markers
                      |> Seq.toList |> vector
     let results = m.Solve(b)
     // apply pressure only to borders of fluid cells.
-    let inv_c = 1.0 / c
+    // TODO: very wrong.
+    let inv_c = 1.0 / float c
     let gradient (where: Coord) v =
       let neighbors = where.forwardNeighbors ()
       let p = results.[lookups.[where]]
@@ -132,6 +130,7 @@ module Simulator =
       let n1 = if lookups.ContainsKey v1 then results.[lookups.[v1]] else 1.0
       let n2 = if lookups.ContainsKey v2 then results.[lookups.[v2]] else 1.0
       let n3 = if lookups.ContainsKey v3 then results.[lookups.[v3]] else 1.0
+      // TODO: this is wrong.
       Vector3d<m/s>((p - n1) * 1.0<m/s>, (p - n2) * 1.0<m/s>, (p - n3) * 1.0<m/s>)
     Seq.iter2 (fun m result ->
                  let pressure = gradient m results
@@ -180,13 +179,12 @@ module Simulator =
 
   let move_markers dt =
     // for now, advance by frame.
-    let dt = dt * 1.0<s>
     markers <- Seq.map (fun (m: Coord) ->
-                          let p = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
+                          let p = Vector3d<m>(m.x, m.y, m.z)
                           let c = Grid.raw_get m
                           let new_coords = p .+ (c.velocity .* dt)
                           printfn "new coords: %O from %O; velocity is %O" new_coords m c.velocity
-                          { x = int new_coords.x; y = int new_coords.y; z = int new_coords.z; }
+                          Coord.construct(int new_coords.x, int new_coords.y, int new_coords.z)
                         ) markers |> Seq.toList
 
   let advance () =
@@ -231,6 +229,6 @@ module Simulator =
                         let x = r.Next(-l, l + 1) * h
                         let y = r.Next(-l, l + 1) * h
                         let z = r.Next(-l, l + 1) * h
-                        yield { x = x; y = y; z = z; } ]
+                        yield { x = x * 1<m>; y = y * 1<m>; z = z * 1<m>; } ]
     markers <- Set.ofList new_markers |> Seq.toList
     update_fluid_markers ()

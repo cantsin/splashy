@@ -11,11 +11,9 @@ module Coord =
 
   type CoordDirection = NegX | NegY | NegZ | PosX | PosY | PosZ
 
-  // TODO: make coord a SI unit -- int<m>
-
   //[<CustomEquality;CustomComparison>]
   type Coord =
-    { x: int; y: int; z: int }
+    { x: int<m>; y: int<m>; z: int<m> }
 
     // override this.GetHashCode () =
     //   541 * this.x + 79 * this.y + 31 * this.z
@@ -31,8 +29,11 @@ module Coord =
     //       | :? Coord as c -> compare this c
     //       | _ -> invalidArg "Coord" "cannot compare values of different types."
 
+    static member construct(x: int, y: int, z:int) =
+      { x = x * 1<m>; y = y * 1<m>; z = z * 1<m>; }
+
     member this.neighbors () =
-      let h = int Constants.h
+      let h = int Constants.h * 1<m>
       [| PosX, { this with x = this.x + h };
          NegX, { this with x = this.x - h };
          PosY, { this with y = this.y + h };
@@ -41,18 +42,18 @@ module Coord =
          NegZ, { this with z = this.z - h }; |]
 
     member this.backwardNeighbors () =
-      let h = int Constants.h
+      let h = int Constants.h * 1<m>
       [| NegX, { this with x = this.x - h };
          NegY, { this with y = this.y - h };
          NegZ, { this with z = this.z - h }; |]
 
     member this.forwardNeighbors () =
-      let h = int Constants.h
+      let h = int Constants.h * 1<m>
       [| PosX, { this with x = this.x + h };
          PosY, { this with y = this.y + h };
          PosZ, { this with z = this.z + h }; |]
 
-    override this.ToString () = sprintf "Coord[%d; %d; %d]" this.x this.y this.z
+    override this.ToString () = sprintf "Coord[%A; %A; %A]" this.x this.y this.z
 
   let reverse d =
     match d with

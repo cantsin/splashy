@@ -17,6 +17,11 @@ module Vector =
           failwith "Vector3d got NaN."
         { x = x; y = y; z = z; }
 
+      new(x: int<'u>, y: int<'u>, z:int<'u>) =
+        { x = float x * LanguagePrimitives.FloatWithMeasure 1.0;
+          y = float y * LanguagePrimitives.FloatWithMeasure 1.0;
+          z = float z * LanguagePrimitives.FloatWithMeasure 1.0; }
+
       // set up explicit operators, as I dislike overloading common operators.
       static member (.+) (v1: Vector3d<'u>, v2: Vector3d<'u>) = Vector3d<'u>(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
 
