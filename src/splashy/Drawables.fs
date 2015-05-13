@@ -86,7 +86,7 @@ module Drawables =
     let color = [|1.0f; 1.0f; 1.0f; 0.1f|]
     interface IDrawable with
       member this.prepare p =
-        vao <- prepare_aabb p color (Aabb.rawData Constants.bounds)
+        vao <- prepare_aabb p color (Aabb.raw_data Constants.bounds)
       member this.render location =
         GL.UniformMatrix4(location, false, &position)
         GL.BindVertexArray(vao)
@@ -111,7 +111,7 @@ module Drawables =
                        | Fluid -> fluid_color
                        | Solid -> solid_color
                        | Air -> air_color
-        let newVao = prepare_aabb p color (Aabb.rawData cell_bounds)
+        let newVao = prepare_aabb p color (Aabb.raw_data cell_bounds)
         vao <- newVao
       member this.render location =
         let mutable m = Matrix4.CreateTranslation(transform)

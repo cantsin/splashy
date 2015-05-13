@@ -1,7 +1,6 @@
 namespace splashy
 
 open Vector
-open Quad
 
 /// axis-aligned bounding boxes: used to draw the bounds of the
 /// simulation and also those cells that represent fluid markers.
@@ -19,7 +18,7 @@ module Aabb =
     p.z >= a.min_bounds.z && p.z <= a.max_bounds.z
 
   // for rendering purposes.
-  let rawData a =
+  let raw_data a =
     [| a.min_bounds.x; a.min_bounds.y; a.max_bounds.z; 1.0;
        a.max_bounds.x; a.min_bounds.y; a.max_bounds.z; 1.0;
        a.max_bounds.x; a.max_bounds.y; a.max_bounds.z; 1.0;
