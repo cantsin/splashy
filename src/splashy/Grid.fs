@@ -14,14 +14,14 @@ module Grid =
   type Cell =
     { media: Media;
       velocity: Vector3d<m/s>; // from the minimal faces, not the center.
-      pressure: float<kg/(m*s^2)>;
+      pressure: Option<float<kg/(m*s^2)>>;
       layer: Option<int>; }
 
     member this.is_solid () = match this.media with Solid -> true | _ -> false
 
     member this.is_not_solid () = not (this.is_solid ())
 
-  let default_cell = { pressure = 0.0<kg/(m*s^2)>; media = Air; layer = None; velocity = Vector3d.ZERO }
+  let default_cell = { media = Air; velocity = Vector3d.ZERO; pressure = None; layer = None; }
 
   let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
 

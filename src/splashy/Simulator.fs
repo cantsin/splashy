@@ -44,9 +44,12 @@ module Simulator =
             Grid.set where { c with layer = Some i }
           | None ->
             if Aabb.contains world where then
-              Grid.add where { Grid.default_cell with media = Air; layer = Some i }
+              Grid.add where { Grid.default_cell with media = Air;
+                                                      layer = Some i;
+                                                      pressure = Some Constants.atmospheric_pressure; }
             else
-              Grid.add where { Grid.default_cell with media = Solid; layer = Some i }
+              Grid.add where { Grid.default_cell with media = Solid;
+                                                      layer = Some i }
           | _ -> ()
 
   // convection by means of a backwards particle trace.
