@@ -24,8 +24,17 @@ module Coord =
         | :? Coord as c -> this.x = c.x && this.y = c.y && this.z = c.z
         | _ -> false
 
-    // we only care about equality here.
-    static member compare v1 v2 = if v1 = v2 then 0 else 1
+    static member compare v1 v2 =
+      let cmp x y = if x = y then 0 else if x > y then 1 else -1
+      let x1 = cmp v1.x v2.x
+      let x2 = cmp v1.y v2.y
+      let x3 = cmp v1.z v2.z
+      match x1 with
+        | 0 ->
+          match x2 with
+            | 0 -> x3
+            | n -> n
+        | n -> n
 
     interface System.IComparable with
       member this.CompareTo that =
