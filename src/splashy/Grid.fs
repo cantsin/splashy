@@ -163,7 +163,7 @@ module Grid =
   let gradient (where: Coord) =
     let c = raw_get where
     let p = Option.get c.pressure / Constants.fluid_density
-    let neighbors = where.forward_neighbors ()
+    let neighbors = where.backward_neighbors ()
     let get_gradient (_, n) =
       match get n with
         | Some c when c.is_not_solid () ->
@@ -177,4 +177,4 @@ module Grid =
     let n1 = get_gradient neighbors.[0]
     let n2 = get_gradient neighbors.[1]
     let n3 = get_gradient neighbors.[2]
-    Vector3d<m^2/s^2>(n1, n2, n3)
+    Vector3d<m^2/s^2>(p - n1, p - n2, p - n3)

@@ -5,3 +5,4 @@
 ** TODO proper transparency – sorting back-to-front?
 * bugs [0/1]
 ** TODO water collision
+** TODO water still goes through solid cells (N=100+)

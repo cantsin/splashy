@@ -105,7 +105,7 @@ module Simulator =
       for (r, value) in coefficients marker do
         m.[r, c] <- value
     // calculate divergences of the velocity field.
-    let c = Constants.h * Constants.fluid_density / dt
+    let c = (Constants.h * Constants.fluid_density) / dt
     let b = Seq.map (fun m ->
                        let f = Grid.divergence m
                        let a = Grid.number_neighbors (fun c -> c.media = Air) m
@@ -132,7 +132,7 @@ module Simulator =
   let check_pressure () =
     for m in markers do
       let f = Grid.divergence m
-      if f > 0.0001<m/s> then
+      if f > 0.0001<m/s> || f < -0.0001<m/s> then
         failwith <| sprintf "Pressures not correctly set: %A has divergence %A." m f
       printfn "%A passed." m
 
