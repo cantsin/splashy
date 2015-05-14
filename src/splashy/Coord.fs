@@ -45,7 +45,12 @@ module Coord =
     static member nearest n =
       let h = int Constants.h
       let r = n % h
-      if r >= (h / 2) then n + (h - r) else n - r
+      if r = 0 then
+        n
+      else if r >= (h / 2) then
+        n + (h - r)
+      else
+        n - r
 
     static member construct(x: int, y: int, z:int) =
       let to_nearest x = Coord.nearest x * 1<m>
