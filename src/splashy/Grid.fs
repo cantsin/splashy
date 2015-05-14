@@ -139,9 +139,8 @@ module Grid =
     let result = v .- where_v
     result .* 1.0<1/(m^2)>
 
-  // for the divergence, we want to ignore velocity components between
-  // fluid and solid cells.
-  let internal get_shared_velocity' v d n =
+  let internal get_shared_velocity' v dir n =
+    let d = Coord.reverse dir
     match get n with
       | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
         let nv = Coord.border d c.velocity
@@ -153,12 +152,29 @@ module Grid =
 
   let divergence (where: Coord) =
     let neighbors = where.forward_neighbors ()
-    let v = match get where with
-              | Some c -> c.velocity
-              | None -> Vector3d.ZERO
+    let v = (raw_get where).velocity
     Seq.map (fun (d, n) -> get_shared_velocity' v d n) neighbors |> Seq.sum
 
   let number_neighbors fn (where: Coord) =
     let neighbors = where.neighbors ()
     let result = Seq.filter (fun (_, n) -> match get n with | Some c -> fn c | None -> false) neighbors
     result |> Seq.length |> float
+
+  let gradient (where: Coord) =
+    let c = raw_get where
+    let p = Option.get c.pressure / Constants.fluid_density
+    let neighbors = where.forward_neighbors ()
+    let get_gradient (_, n) =
+      match get n with
+        | Some c when c.is_not_solid () ->
+          let density = match c.media with
+                          | Air -> Constants.air_density
+                          | Fluid -> Constants.fluid_density
+                          | _ -> failwith "Could not find density."
+          Option.get c.pressure / density
+        | _ ->
+          0.0<m^2/s^2>
+    let n1 = get_gradient neighbors.[0]
+    let n2 = get_gradient neighbors.[1]
+    let n3 = get_gradient neighbors.[2]
+    Vector3d<m^2/s^2>(n1, n2, n3)

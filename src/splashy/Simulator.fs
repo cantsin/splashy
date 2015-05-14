@@ -3,6 +3,7 @@ namespace splashy
 open MathNet.Numerics.LinearAlgebra
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic
+open System
 open OpenTK
 
 open Constants
@@ -86,8 +87,8 @@ module Simulator =
   let apply_pressure dt =
     let n = Seq.length markers
     let lookups = Seq.zip markers { 0..n } |> dict
-    let coefficients (c: Coord) =
-      let neighbors = c.neighbors ()
+    let coefficients (coord: Coord) =
+      let neighbors = coord.neighbors ()
       // return a 1 for every bordering liquid marker.
       let singulars = Seq.fold (fun accum (_, n) ->
                                   if lookups.ContainsKey n then
@@ -96,46 +97,44 @@ module Simulator =
                                     accum
                                 ) [] neighbors
       // return -N for this marker, where N is number of non solid neighbors.
-      let N = Grid.number_neighbors (fun n -> n.is_not_solid ()) c
-      (lookups.[c], - N) :: singulars
+      let N = Grid.number_neighbors (fun c -> c.is_not_solid ()) coord
+      (lookups.[coord], - N) :: singulars
     // construct a sparse matrix of coefficients.
     let mutable m = SparseMatrix.zero<float> n n
     for KeyValue(marker, c) in lookups do
       for (r, value) in coefficients marker do
         m.[r, c] <- value
-    // construct divergence of velocity field.
+    // calculate divergences of the velocity field.
     let c = Constants.h * Constants.fluid_density / dt
     let b = Seq.map (fun m ->
                        let f = Grid.divergence m
                        let a = Grid.number_neighbors (fun c -> c.media = Air) m
                        let s = Constants.atmospheric_pressure
-                       let result: float<kg/(m*s^2)> = c * f - (s * a) // ensure pressure units.
+                       let result: float<kg/(m*s^2)> = c * f - (s * a) // ensure we have units of pressure.
                        float result
                      ) markers
                      |> Seq.toList |> vector
-    let results = m.Solve(b)
-    // apply pressure only to borders of fluid cells.
-    let inv_c = 1.0 / c
-    let get_result key =
-      if lookups.ContainsKey key then
-        results.[lookups.[key]] * 1.0<kg/(m*s^2)>
-      else
-        Constants.atmospheric_pressure
-    let gradient (where: Coord) =
-      let p = results.[lookups.[where]] * 1.0<kg/(m*s^2)>
-      let neighbors = where.forward_neighbors ()
-      let (_, v1) = neighbors.[0]
-      let (_, v2) = neighbors.[1]
-      let (_, v3) = neighbors.[2]
-      let n1 = get_result v1
-      let n2 = get_result v2
-      let n3 = get_result v3
-      Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
-    Seq.iter (fun m ->
-                let c = Grid.raw_get m
-                let pressure = gradient m
-                Grid.set m { c with velocity = c.velocity .- (pressure .* inv_c) }
-              ) markers
+    let pressures = m.Solve(b)
+    // set pressures.
+    for (m, p) in Seq.zip markers pressures do
+      let c = Grid.raw_get m
+      if Double.IsNaN (p / LanguagePrimitives.FloatWithMeasure 1.0) then
+        failwith "Invalid pressure."
+      Grid.set m { c with pressure = Some (p * 1.0<kg/(m*s^2)>) }
+    // calculate the resulting pressure gradient and set velocities.
+    let inv_c = dt / Constants.h
+    for m in markers do
+      let c = Grid.raw_get m
+      let gradient: Vector3d<m^2/s^2> = Grid.gradient m
+      Grid.set m { c with velocity = c.velocity .- (gradient .* inv_c) }
+
+  // verify that for each marker, ∇⋅u = 0.
+  let check_pressure () =
+    for m in markers do
+      let f = Grid.divergence m
+      if f > 0.0001<m/s> then
+        failwith <| sprintf "Pressures not correctly set: %A has divergence %A." m f
+      printfn "%A passed." m
 
   // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =
@@ -200,6 +199,9 @@ module Simulator =
     apply_viscosity dt  // v∇²u
     printfn "Applying pressure."
     apply_pressure dt   // -1/ρ∇p
+    // sanity check, part 1.
+    printfn "* Verifying pressure."
+    check_pressure ()
     printfn "Cleaning up grid."
     Grid.cleanup (fun () ->
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
@@ -209,7 +211,8 @@ module Simulator =
     )
     printfn "Moving fluid markers."
     move_markers dt
-    // sanity check.
+    // sanity check, part 2.
+    printfn "* Verifying containment."
     Seq.iter (fun (m: Coord) ->
                 if not (Aabb.contains world m) then
                   failwith (sprintf "Error: Fluid markers went outside bounds (example: %O)." m)
@@ -229,3 +232,6 @@ module Simulator =
     let to_vec m = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
     locations <- Seq.map to_vec markers |> Seq.toList
     update_fluid_markers ()
+    let actual = Seq.length markers
+    if actual <> n then
+      printfn "Warning: could only generate %d random markers." actual

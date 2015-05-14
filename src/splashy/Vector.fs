@@ -1,7 +1,6 @@
 namespace splashy
 
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
-
 open System
 
 module Vector =

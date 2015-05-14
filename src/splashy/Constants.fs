@@ -14,7 +14,10 @@ module Constants =
   [<Literal>]
   let fluid_density = 999.97<kg/m^3>
   [<Literal>]
-  let atmospheric_pressure = 1013.25<kg/(m*s^2)> // in hectopascals.
+  let air_density = 1.0<kg/m^3>
+  [<Literal>]
+  // hectopascals, so should be 101325.0 but this value seems way too big.
+  let atmospheric_pressure = 1013.25<kg/(m*s^2)>
   [<Literal>]
   let max_velocity = 2.5<m/s>
   [<Literal>]
