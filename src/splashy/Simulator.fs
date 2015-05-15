@@ -120,6 +120,8 @@ module Simulator =
       let c = Grid.raw_get m
       if Double.IsNaN (p / LanguagePrimitives.FloatWithMeasure 1.0) then
         failwith "Invalid pressure."
+      if p < 0.0 then
+        failwith "Pressure is negative."
       Grid.set m { c with pressure = Some (p * 1.0<kg/(m*s^2)>) }
     // calculate the resulting pressure gradient and set velocities.
     let inv_c = dt / Constants.h
