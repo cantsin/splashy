@@ -139,21 +139,26 @@ module Grid =
     let result = v .- where_v
     result .* 1.0<1/(m^2)>
 
-  let internal get_shared_velocity' v dir n =
+  let internal get_incoming_velocity (dir, n) =
     let d = Coord.reverse dir
     match get n with
       | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
-        let nv = Coord.border d c.velocity
-        let cv = Coord.border d v
-        let result = nv .- cv
-        result.x + result.y + result.z
-      | _ ->
+        let nv = Coord.border_value d c.velocity
+        nv
+      | Some c ->
+        if c.media = Solid then
+          failwith "*** Warning: divergence calculations hit a solid."
         0.0<m/s>
+      | _ ->
+        failwith "neighbor does not exist."
 
   let divergence (where: Coord) =
-    let neighbors = where.forward_neighbors ()
     let v = (raw_get where).velocity
-    Seq.map (fun (d, n) -> get_shared_velocity' v d n) neighbors |> Seq.sum
+    let neighbors = where.forward_neighbors ()
+    let value = Seq.map get_incoming_velocity neighbors |> Seq.sum
+    // TODO modify cv so that if we have a velocity towards a solid, zero it
+    let cv = v.x + v.y + v.z
+    value - cv
 
   let number_neighbors fn (where: Coord) =
     let neighbors = where.neighbors ()

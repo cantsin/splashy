@@ -110,6 +110,12 @@ module Coord =
       | NegY | PosY -> Vector3d<'u>(0.0<_>, v.y, 0.0<_>)
       | NegZ | PosZ -> Vector3d<'u>(0.0<_>, 0.0<_>, v.z)
 
+  let border_value d (v: Vector3d<'u>) =
+    match d with
+      | NegX | PosX -> v.x
+      | NegY | PosY -> v.y
+      | NegZ | PosZ -> v.z
+
   let merge d (old_v: Vector3d<'u>) (new_v: Vector3d<'u>) =
     match d with
       | NegX | PosX -> Vector3d<'u>(new_v.x, old_v.y, old_v.z)
