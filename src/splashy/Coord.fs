@@ -83,7 +83,27 @@ module Coord =
          PosY, { this with y = this.y + h };
          PosZ, { this with z = this.z + h }; |]
 
+    member this.get_neighbor dir =
+      let h = int Constants.h * 1<m>
+      match dir with
+        | NegX -> { this with x = this.x - h }
+        | PosX -> { this with x = this.x + h }
+        | NegY -> { this with y = this.y - h }
+        | PosY -> { this with y = this.y + h }
+        | NegZ -> { this with z = this.z - h }
+        | PosZ -> { this with z = this.z + h }
+
     override this.ToString () = sprintf "Coord[%A; %A; %A]" this.x this.y this.z
+
+  let get_borders (v: Vector3d<'u>) =
+    let mutable (borders: CoordDirection list) = []
+    if v.x < 0.0<_> then borders <- NegX :: borders
+    if v.x > 0.0<_> then borders <- PosX :: borders
+    if v.y < 0.0<_> then borders <- NegY :: borders
+    if v.y > 0.0<_> then borders <- PosY :: borders
+    if v.z < 0.0<_> then borders <- NegZ :: borders
+    if v.z > 0.0<_> then borders <- PosZ :: borders
+    borders
 
   let reverse d =
     match d with

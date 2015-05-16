@@ -81,7 +81,7 @@ module Grid =
           | 0 -> Some c.velocity.x
           | 1 -> Some c.velocity.y
           | 2 -> Some c.velocity.z
-          | _ -> failwith "No such index."
+          | _ -> failwith "No such velocity index."
       | _ -> None
 
   let internal interpolate x y z index =
@@ -122,7 +122,7 @@ module Grid =
     let p = cv .+ (dv .* t)
     Coord.construct(p.x, p.y, p.z)
 
-  let internal get_shared_velocity d n =
+  let internal get_shared_velocity (d, n) =
     match get n with
       | Some c when c.media = Fluid && Coord.is_bordering d c.velocity ->
         Coord.border d c.velocity
@@ -134,8 +134,7 @@ module Grid =
     let where_v = match get where with
                     | Some c -> c.velocity .* 6.0
                     | None -> Vector3d.ZERO
-    let vs = Seq.map (fun (d, n) -> get_shared_velocity d n) neighbors
-    let v = Vector.sum vs
+    let v = Seq.map get_shared_velocity neighbors |> Vector.sum
     let result = v .- where_v
     result .* 1.0<1/(m^2)>
 
@@ -143,43 +142,44 @@ module Grid =
     let d = Coord.reverse dir
     match get n with
       | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
-        let nv = Coord.border_value d c.velocity
-        nv
+        Coord.border_value d c.velocity
       | Some c ->
-        if c.media = Solid then
-          failwith "*** Warning: divergence calculations hit a solid."
         0.0<m/s>
       | _ ->
         failwith "neighbor does not exist."
 
+  let internal get_outgoing_velocity (where: Coord) v dir =
+    let n = where.get_neighbor dir
+    match get n with
+      | Some c when c.is_not_solid () ->
+        Coord.border_value dir v
+      | _ ->
+        0.0<m/s>
+
   let divergence (where: Coord) =
     let v = (raw_get where).velocity
     let neighbors = where.forward_neighbors ()
-    let value = Seq.map get_incoming_velocity neighbors |> Seq.sum
-    // TODO modify cv so that if we have a velocity towards a solid, zero it
-    let cv = v.x + v.y + v.z
-    value - cv
+    let incoming = Seq.map get_incoming_velocity neighbors |> Seq.sum
+    let borders = Coord.get_borders v
+    let outgoing = Seq.map (fun b -> get_outgoing_velocity where v b) borders |> Seq.sum
+    incoming - outgoing
 
   let number_neighbors fn (where: Coord) =
     let neighbors = where.neighbors ()
     let result = Seq.filter (fun (_, n) -> match get n with | Some c -> fn c | None -> false) neighbors
     result |> Seq.length |> float
 
-  let gradient (where: Coord) =
+  let pressure_gradient (where: Coord) =
     let c = raw_get where
-    let p = Option.get c.pressure / Constants.fluid_density
+    let p = Option.get c.pressure
     let neighbors = where.backward_neighbors ()
     let get_gradient (_, n) =
       match get n with
         | Some c when c.is_not_solid () ->
-          let density = match c.media with
-                          | Air -> Constants.air_density
-                          | Fluid -> Constants.fluid_density
-                          | _ -> failwith "Could not find density."
-          Option.get c.pressure / density
+          Option.get c.pressure
         | _ ->
-          0.0<m^2/s^2>
+          0.0<kg/(m*s^2)>
     let n1 = get_gradient neighbors.[0]
     let n2 = get_gradient neighbors.[1]
     let n3 = get_gradient neighbors.[2]
-    Vector3d<m^2/s^2>(p - n1, p - n2, p - n3)
+    Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)

@@ -124,19 +124,18 @@ module Simulator =
         failwith "Pressure is negative."
       Grid.set m { c with pressure = Some (p * 1.0<kg/(m*s^2)>) }
     // calculate the resulting pressure gradient and set velocities.
-    let inv_c = dt / Constants.h
+    let inv_c = 1.0 / c
     for m in markers do
       let c = Grid.raw_get m
-      let gradient: Vector3d<m^2/s^2> = Grid.gradient m
+      let gradient: Vector3d<kg/(m*s^2)> = Grid.pressure_gradient m
       Grid.set m { c with velocity = c.velocity .- (gradient .* inv_c) }
 
   // verify that for each marker, ∇⋅u = 0.
-  let check_pressure () =
+  let check_divergence () =
     for m in markers do
       let f = Grid.divergence m
       if f > 0.0001<m/s> || f < -0.0001<m/s> then
-        failwith <| sprintf "Pressures not correctly set: %A has divergence %A." m f
-      printfn "%A passed." m
+        failwith <| sprintf "Velocity field is not correct: %A has divergence %A." m f
 
   // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =
@@ -202,8 +201,8 @@ module Simulator =
     printfn "Applying pressure."
     apply_pressure dt   // -1/ρ∇p
     // sanity check, part 1.
-    printfn "* Verifying pressure."
-    check_pressure ()
+    printfn "* Verifying divergence."
+    check_divergence ()
     printfn "Cleaning up grid."
     Grid.cleanup (fun () ->
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
