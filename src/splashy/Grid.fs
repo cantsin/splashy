@@ -158,9 +158,9 @@ module Grid =
 
   let divergence (where: Coord) =
     let v = (raw_get where).velocity
+    let borders = Coord.get_borders v
     let neighbors = where.forward_neighbors ()
     let incoming = Seq.map get_incoming_velocity neighbors |> Seq.sum
-    let borders = Coord.get_borders v
     let outgoing = Seq.map (fun b -> get_outgoing_velocity where v b) borders |> Seq.sum
     incoming - outgoing
 

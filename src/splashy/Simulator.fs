@@ -124,11 +124,28 @@ module Simulator =
         failwith "Pressure is negative."
       Grid.set m { c with pressure = Some (p * 1.0<kg/(m*s^2)>) }
     // calculate the resulting pressure gradient and set velocities.
-    let inv_c = 1.0 / c
+    let inv_c = dt / Constants.h
     for m in markers do
+      // only adjust velocity components that border fluid cells
+      let neighbors = m.neighbors ()
+      for (dir, n) in neighbors do
+        let d = Coord.reverse dir
+        match get n with
+          | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
+            let new_velocity = Coord.border d c.velocity
+            let gradient: Vector3d<kg/(m*s^2)> = Grid.pressure_gradient n
+            let density = match c.media with
+                            | Air -> Constants.air_density
+                            | Fluid -> Constants.fluid_density
+                            | _ -> failwith "no density for media found."
+            let offset = gradient .* (inv_c / density)
+            Grid.set n { c with velocity = new_velocity .- offset }
+          | _ -> ()
       let c = Grid.raw_get m
-      let gradient: Vector3d<kg/(m*s^2)> = Grid.pressure_gradient m
-      Grid.set m { c with velocity = c.velocity .- (gradient .* inv_c) }
+      let gradient = Grid.pressure_gradient m
+      let density = Constants.fluid_density
+      let offset = gradient .* (inv_c / density)
+      Grid.set m { c with velocity = c.velocity .- offset }
 
   // verify that for each marker, ∇⋅u = 0.
   let check_divergence () =
