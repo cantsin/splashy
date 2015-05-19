@@ -104,6 +104,8 @@ module Simulator =
     for KeyValue(marker, c) in lookups do
       for (r, value) in coefficients marker do
         m.[r, c] <- value
+    if not (m.IsSymmetric ()) then
+      failwith "Coefficient matrix is not symmetric."
     // calculate divergences of the velocity field.
     let c = (Constants.h * Constants.fluid_density) / dt
     let b = Seq.map (fun m ->
@@ -200,8 +202,12 @@ module Simulator =
     markers <- Seq.map (fun (l: Vector3d<m>) -> Coord.construct(l.x, l.y, l.z)) locations |> Seq.toList
 
   let advance dt =
-    let dt = dt * Constants.time_step
+    let dt = 0.0066
+    let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
+    // sanity check, part 1.
+    printfn "* Verifying divergence (1)."
+    check_divergence ()
     printfn "Moving simulation forward with time step %A." dt
     Grid.setup (fun () ->
       printfn "  Setup: Updating fluid markers."
@@ -217,8 +223,8 @@ module Simulator =
     apply_viscosity dt  // v∇²u
     printfn "Applying pressure."
     apply_pressure dt   // -1/ρ∇p
-    // sanity check, part 1.
-    printfn "* Verifying divergence."
+    // sanity check, part 2.
+    printfn "* Verifying divergence (2)."
     check_divergence ()
     printfn "Cleaning up grid."
     Grid.cleanup (fun () ->
@@ -229,7 +235,7 @@ module Simulator =
     )
     printfn "Moving fluid markers."
     move_markers dt
-    // sanity check, part 2.
+    // sanity check, part 3.
     printfn "* Verifying containment."
     Seq.iter (fun (m: Coord) ->
                 if not (Aabb.contains world m) then
@@ -238,7 +244,8 @@ module Simulator =
 
   // generate a random amount of markers to begin with (testing purposes only).
   let generate n =
-    let r = System.Random()
+    let seed = 12345
+    let r = System.Random(seed)
     let h = int Constants.h
     let l = int (Constants.world_h / float32 Constants.h)
     let new_markers = [ for _ in 0..n-1 do

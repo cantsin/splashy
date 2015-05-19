@@ -143,10 +143,8 @@ module Grid =
     match get n with
       | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
         Coord.border_value d c.velocity
-      | Some c ->
-        0.0<m/s>
       | _ ->
-        failwith "neighbor does not exist."
+        0.0<m/s>
 
   let internal get_outgoing_velocity (where: Coord) v dir =
     let n = where.get_neighbor dir
