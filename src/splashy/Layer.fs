@@ -48,7 +48,7 @@ module Layer =
           | Some c when c.media <> Fluid && c.layer = None ->
             Grid.set where { c with layer = Some i }
           | None ->
-            if Aabb.contains World.world where then
+            if Aabb.contains World.bounds where then
               Grid.add where { Cell.default_cell with media = Air;
                                                       layer = Some i;
                                                       pressure = Some Constants.atmospheric_pressure; }

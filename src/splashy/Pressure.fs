@@ -50,7 +50,7 @@ module Pressure =
     Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
 
   // set the pressure such that the divergence throughout the fluid is zero.
-  let apply_pressure markers dt =
+  let apply markers dt =
     let n = Seq.length markers
     let lookups = Seq.zip markers { 0..n } |> dict
     let coefficients (coord: Coord) =
@@ -93,27 +93,34 @@ module Pressure =
       Grid.set m { c with pressure = Some (p * 1.0<kg/(m*s^2)>) }
     // calculate the resulting pressure gradient and set velocities.
     let inv_c = dt / Constants.h
-    for m in markers do
-      // only adjust velocity components that border fluid cells
-      let neighbors = m.neighbors ()
-      for (dir, n) in neighbors do
-        let d = Coord.reverse dir
-        match get n with
-          | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
-            let new_velocity = Coord.border d c.velocity
-            let gradient: Vector3d<kg/(m*s^2)> = pressure_gradient n
-            let density = match c.media with
-                            | Air -> Constants.air_density
-                            | Fluid -> Constants.fluid_density
-                            | _ -> failwith "no density for media found."
-            let offset = gradient .* (inv_c / density)
-            Grid.set n { c with velocity = new_velocity .- offset }
-          | _ -> ()
-      let c = Grid.raw_get m
-      let gradient = pressure_gradient m
-      let density = Constants.fluid_density
-      let offset = gradient .* (inv_c / density)
-      Grid.set m { c with velocity = c.velocity .- offset }
+    Seq.map (fun (m: Coord) ->
+               // only adjust velocity components that border fluid cells
+               let neighbors = m.neighbors ()
+               let borders = Seq.filter (fun (dir, n) ->
+                                           let d = Coord.reverse dir
+                                           match get n with
+                                             | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity -> true
+                                             | _ -> false
+                                        ) neighbors
+               let nvs = Seq.map (fun (dir, n) ->
+                                    let d = Coord.reverse dir
+                                    let c = Grid.raw_get n
+                                    let new_velocity = Coord.border d c.velocity
+                                    let gradient: Vector3d<kg/(m*s^2)> = pressure_gradient n
+                                    let density = match c.media with
+                                                    | Air -> Constants.air_density
+                                                    | Fluid -> Constants.fluid_density
+                                                    | _ -> failwith "no density for media found."
+                                    let offset = gradient .* (inv_c / density)
+                                    let v = new_velocity .- offset
+                                    (n, v)) borders
+               let c = Grid.raw_get m
+               let gradient = pressure_gradient m
+               let density = Constants.fluid_density
+               let offset = gradient .* (inv_c / density)
+               let v = c.velocity .- offset
+               (m, v) :: (nvs |> Seq.toList)
+            ) markers |> Seq.concat
 
   // verify that for each marker, ∇⋅u = 0.
   let check_divergence markers =

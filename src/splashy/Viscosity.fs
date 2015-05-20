@@ -26,11 +26,11 @@ module Viscosity =
     result .* 1.0<1/(m^2)>
 
   // viscosity by evaluating the lapalacian on bordering fluid cells.
-  let apply_viscosity markers dt =
+  let apply markers dt =
     let const_v: float<m^2> = Constants.fluid_viscosity * dt
-    let velocities = Seq.map laplacian markers
-    Seq.iter2 (fun m result ->
-                 let c = Grid.raw_get m
-                 let dv = result .* const_v
-                 Grid.set m { c with velocity = c.velocity .+ dv }
-               ) markers velocities
+    Seq.map (fun m ->
+               let result = laplacian m
+               let c = Grid.raw_get m
+               let v = c.velocity .+ (result .* const_v)
+               (m, v)
+            ) markers

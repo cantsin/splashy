@@ -30,7 +30,7 @@ module Simulator =
         | Some c when c.is_not_solid () ->
           Grid.set marker { c with media = Fluid; layer = Some 0; }
         | None ->
-          if Aabb.contains World.world marker then
+          if Aabb.contains World.bounds marker then
             Grid.add marker { Cell.default_cell with media = Fluid; layer = Some 0; }
         | _ ->
           ()
@@ -43,6 +43,12 @@ module Simulator =
                             l .+ (c.velocity .* dt)
                           ) locations |> Seq.toList
     markers <- Seq.map (fun (l: Vector3d<m>) -> Coord.construct(l.x, l.y, l.z)) locations |> Seq.toList
+
+  let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
+    Seq.iter (fun (where, new_v) ->
+                let c = Grid.raw_get where
+                Grid.set where { c with velocity = new_v }
+              ) velocities
 
   let advance dt =
     let dt = 0.0066
@@ -58,14 +64,14 @@ module Simulator =
     // sanity check, part 1.
     printfn "* Verifying divergence (1)."
     Pressure.check_divergence markers
-    printfn "Applying convection."
-    Convection.apply_convection markers dt // -(∇⋅u)u
-    printfn "Applying forces."
-    Forces.apply_forces markers dt         // F
-    printfn "Applying viscosity."
-    Viscosity.apply_viscosity markers dt   // v∇²u
-    printfn "Applying pressure."
-    Pressure.apply_pressure markers dt     // -1/ρ∇p
+    printfn "Applying convection term -(∇⋅u)u."
+    Convection.apply markers dt |> update_velocities
+    printfn "Applying external forces term F."
+    Forces.apply markers dt |> update_velocities
+    printfn "Applying viscosity term v∇²u."
+    Viscosity.apply markers dt |> update_velocities
+    printfn "Applying pressure term -1/ρ∇p."
+    Pressure.apply markers dt |> update_velocities
     // sanity check, part 2.
     printfn "* Verifying divergence (2)."
     Pressure.check_divergence markers
@@ -81,8 +87,8 @@ module Simulator =
     // sanity check, part 3.
     printfn "* Verifying containment."
     Seq.iter (fun (m: Coord) ->
-                if not (Aabb.contains World.world m) then
-                  failwith (sprintf "Error: Fluid markers went outside bounds (example: %O)." m)
+                if not (Aabb.contains World.bounds m) then
+                  failwith (sprintf "Error: Fluid marker went outside bounds (example: %O)." m)
              ) markers
 
   // generate a random amount of markers to begin with (testing purposes only).

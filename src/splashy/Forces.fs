@@ -3,8 +3,10 @@ namespace splashy
 module Forces =
 
   // gravity only (for now).
-  let apply_forces markers dt =
+  let apply markers dt =
     let f = Constants.gravity .* dt
-    for marker in markers do
-      let c = Grid.raw_get marker
-      Grid.set marker { c with velocity = c.velocity .+ f }
+    Seq.map (fun m ->
+               let c = Grid.raw_get m
+               let v = c.velocity .+ f
+               (m, v)
+            ) markers

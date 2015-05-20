@@ -57,14 +57,10 @@ module Convection =
     Coord.construct(p.x, p.y, p.z)
 
   // convection by means of a backwards particle trace.
-  let apply_convection markers dt =
-    let new_velocities = Seq.map (fun m ->
-                                    let new_position = trace m dt
-                                    match Grid.get new_position with
-                                      | Some c -> c.velocity
-                                      | _ -> failwith "Backwards particle trace went too far."
-                                  ) markers
-    Seq.iter2 (fun m new_v ->
-                 let c = Grid.raw_get m
-                 Grid.set m { c with velocity = new_v }
-              ) markers new_velocities
+  let apply markers dt =
+    Seq.map (fun m ->
+               let new_position = trace m dt
+               match Grid.get new_position with
+                 | Some c -> (m, c.velocity)
+                 | _ -> failwith "Backwards particle trace went too far."
+            ) markers
