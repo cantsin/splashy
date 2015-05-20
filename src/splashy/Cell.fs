@@ -13,7 +13,6 @@ module Cell =
       media: Media;
       velocity: Vector3d<m/s>; // from the minimal faces (facing the negative axes).
       pressure: Option<float<kg/(m*s^2)>>;
-      layer: Option<int>;
     }
 
     member this.is_solid () = match this.media with Solid -> true | _ -> false

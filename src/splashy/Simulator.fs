@@ -36,16 +36,12 @@ module Simulator =
     printfn "-->"
     printfn "Moving simulation forward with time step %A." dt
     Build.setup (fun () ->
-      Build.verify ()
       printfn "  Setup: Synchronizing fluid markers."
       Build.sync_markers markers
-      Build.verify ()
       printfn "  Setup: Creating air buffer."
       Build.create_air_buffer ()
-      Build.verify ()
       printfn "  Setup: Removing unused layers."
       Build.delete_unused ()
-      Build.verify ()
     )
     // sanity check, part 1.
     printfn "* Verifying divergence (1)."
@@ -64,14 +60,10 @@ module Simulator =
     Pressure.check_divergence markers
     printfn "Cleaning up grid."
     Build.cleanup (fun () ->
-      Build.verify ()
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
-      Build.verify ()
       Build.propagate_velocities ()
-      Build.verify ()
       printfn "  Cleanup: Setting solid cell velocities to zero."
       Build.zero_solid_velocities()
-      Build.verify ()
     )
     printfn "Moving fluid markers."
     move_markers dt
