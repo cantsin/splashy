@@ -76,7 +76,7 @@
     <Compile Include="World.fs" />
     <Compile Include="Cell.fs" />
     <Compile Include="Grid.fs" />
-    <Compile Include="Layer.fs" />
+    <Compile Include="Build.fs" />
     <Compile Include="Pressure.fs" />
     <Compile Include="Forces.fs" />
     <Compile Include="Convection.fs" />

@@ -10,7 +10,7 @@ open Vector
 open Aabb
 open Coord
 open Grid
-open Layer
+open Build
 open Convection
 open Viscosity
 open Pressure
@@ -35,41 +35,49 @@ module Simulator =
     let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
     printfn "Moving simulation forward with time step %A." dt
-    Layer.setup (fun () ->
+    Build.setup (fun () ->
+      Build.verify ()
       printfn "  Setup: Synchronizing fluid markers."
-      Layer.sync_markers markers
+      Build.sync_markers markers
+      Build.verify ()
       printfn "  Setup: Creating air buffer."
-      Layer.create_air_buffer ()
+      Build.create_air_buffer ()
+      Build.verify ()
       printfn "  Setup: Removing unused layers."
-      Layer.delete_unused ()
+      Build.delete_unused ()
+      Build.verify ()
     )
     // sanity check, part 1.
     printfn "* Verifying divergence (1)."
     Pressure.check_divergence markers
     printfn "Applying convection term -(∇⋅u)u."
-    Convection.apply markers dt |> Layer.update_velocities
+    Convection.apply markers dt |> Build.update_velocities
     printfn "Applying external forces term F."
-    Forces.apply markers dt |> Layer.update_velocities
+    Forces.apply markers dt |> Build.update_velocities
     printfn "Applying viscosity term v∇²u."
-    Viscosity.apply markers dt |> Layer.update_velocities
+    Viscosity.apply markers dt |> Build.update_velocities
     printfn "Applying pressure term -1/ρ∇p."
-    Pressure.calculate markers dt |> Layer.update_pressures
-    Pressure.apply markers dt |> Layer.update_velocities
+    Pressure.calculate markers dt |> Build.update_pressures
+    Pressure.apply markers dt |> Build.update_velocities
     // sanity check, part 2.
     printfn "* Verifying divergence (2)."
     Pressure.check_divergence markers
     printfn "Cleaning up grid."
-    Layer.cleanup (fun () ->
+    Build.cleanup (fun () ->
+      Build.verify ()
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
-      Layer.propagate_velocities ()
+      Build.verify ()
+      Build.propagate_velocities ()
+      Build.verify ()
       printfn "  Cleanup: Setting solid cell velocities to zero."
-      Layer.zero_solid_velocities()
+      Build.zero_solid_velocities()
+      Build.verify ()
     )
     printfn "Moving fluid markers."
     move_markers dt
     // sanity check, part 3.
     printfn "* Verifying containment."
-    Layer.check_containment markers
+    Build.check_containment markers
 
   // generate a random amount of markers to begin with (testing purposes only).
   let generate n =
