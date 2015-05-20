@@ -10,3 +10,5 @@ module World =
   // the world bounding box.
   let bounds = { min_bounds = Vector3(-Constants.world_h, -Constants.world_h, -Constants.world_h);
                  max_bounds = Vector3( Constants.world_h,  Constants.world_h,  Constants.world_h) }
+
+  let contains c = Aabb.contains bounds c

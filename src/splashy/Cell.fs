@@ -19,5 +19,3 @@ module Cell =
     member this.is_solid () = match this.media with Solid -> true | _ -> false
 
     member this.is_not_solid () = not (this.is_solid ())
-
-  let default_cell = { media = Air; velocity = Vector3d.ZERO; pressure = None; layer = None; }

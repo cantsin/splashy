@@ -15,6 +15,7 @@ open System.IO
 open SourceLink
 #endif
 #r @"packages/FSharpLint/FSharpLint.Worker.dll"
+#r @"packages/FSharpLint/FSharpLint.CrossDomain.dll"
 #r @"packages/FSharpLint/FSharpLint.FAKE.dll"
 open FSharpLint.FAKE
 

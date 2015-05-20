@@ -40,6 +40,8 @@ module Simulator =
       Layer.sync_markers markers
       printfn "  Setup: Creating air buffer."
       Layer.create_air_buffer ()
+      printfn "  Setup: Removing unused layers."
+      Layer.delete_unused ()
     )
     // sanity check, part 1.
     printfn "* Verifying divergence (1)."
@@ -83,7 +85,6 @@ module Simulator =
     markers <- Set.ofList new_markers |> Seq.toList
     let to_vec m = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
     locations <- Seq.map to_vec markers |> Seq.toList
-    Layer.sync_markers markers
     let actual = Seq.length markers
     if actual <> n then
       printfn "Warning: could only generate %d random markers." actual

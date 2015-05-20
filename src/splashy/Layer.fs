@@ -16,27 +16,41 @@ module Layer =
   let mutable private layers = new Dictionary<Coord, Option<int>>() // used for constructing buffer zones.
 
   let setup fn =
-    try
-      // reset grid layers.
-      let coords = Grid.filter (fun _ -> true)
-      Seq.iter (fun m ->
-                  let c = raw_get m
-                  set m { c with layer = None }
-                ) coords
-      fn ()
-    finally
-      // get rid of unused layers.
-      let leftover = Grid.filter (fun c -> c.layer = None)
-      Seq.iter delete leftover
-
-  let cleanup fn =
-    // reset grid layers but mark fluids as layer 0.
+    // reset grid layers.
     let coords = Grid.filter (fun _ -> true)
     Seq.iter (fun m ->
                 let c = raw_get m
-                set m { c with layer = if c.media = Fluid then Some 0 else None }
+                set m { c with layer = None }
               ) coords
     fn ()
+
+  // synchronize our fluid markers with the grid.
+  let sync_markers markers =
+    for marker in markers do
+      match Grid.get marker with
+        | Some c when c.is_not_solid () ->
+          Grid.set marker { c with media = Fluid; layer = Some 0; }
+        | None ->
+          if World.contains marker then
+            Grid.add marker { media = Fluid;
+                              velocity = Vector3d.ZERO;
+                              layer = Some 0;
+                              pressure = None; }
+        | _ ->
+          ()
+
+  // reset grid layers but mark fluids as layer 0.
+  let cleanup fn =
+    let coords = Grid.filter (fun _ -> true)
+    Seq.iter (fun m ->
+                let c = Grid.raw_get m
+                Grid.set m { c with layer = if c.media = Fluid then Some 0 else None }
+              ) coords
+    fn ()
+
+  let delete_unused () =
+    let leftover = Grid.filter (fun c -> c.layer = None)
+    Seq.iter delete leftover
 
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
@@ -49,13 +63,16 @@ module Layer =
           | Some c when c.media <> Fluid && c.layer = None ->
             Grid.set where { c with layer = Some i }
           | None ->
-            if Aabb.contains World.bounds where then
-              Grid.add where { Cell.default_cell with media = Air;
-                                                      layer = Some i;
-                                                      pressure = Some Constants.atmospheric_pressure; }
+            if World.contains where then
+              Grid.add where { media = Air;
+                               velocity = Vector3d.ZERO;
+                               layer = Some i;
+                               pressure = Some Constants.atmospheric_pressure; }
             else
-              Grid.add where { Cell.default_cell with media = Solid;
-                                                      layer = Some i }
+              Grid.add where { media = Solid;
+                               velocity = Vector3d.ZERO;
+                               layer = Some i;
+                               pressure = None; }
           | _ -> ()
 
   // propagate the fluid velocities into the buffer zone.
@@ -78,9 +95,9 @@ module Layer =
             match Grid.get neighbor with
               | Some n when n.media <> Fluid && Coord.is_bordering dir c.velocity ->
                 let new_v = Coord.merge dir c.velocity pla
-                set m { c with velocity = new_v }
+                Grid.set m { c with velocity = new_v }
               | _ -> ()
-          set m { c with layer = previous_layer_count }
+          Grid.set m { c with layer = previous_layer_count }
 
   // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
@@ -93,18 +110,6 @@ module Layer =
           | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity ->
             Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
           | _ -> ()
-
-  // synchronize our fluid markers with the grid.
-  let sync_markers markers =
-    for marker in markers do
-      match Grid.get marker with
-        | Some c when c.is_not_solid () ->
-          Grid.set marker { c with media = Fluid; layer = Some 0; }
-        | None ->
-          if Aabb.contains World.bounds marker then
-            Grid.add marker { Cell.default_cell with media = Fluid; layer = Some 0; }
-        | _ ->
-          ()
 
   let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
     Seq.iter (fun (where, new_v) ->
@@ -120,6 +125,6 @@ module Layer =
 
   let check_containment markers =
     Seq.iter (fun (m: Coord) ->
-                if not (Aabb.contains World.bounds m) then
+                if not (World.contains m) then
                   failwith (sprintf "Error: Fluid marker went outside bounds (example: %O)." m)
              ) markers

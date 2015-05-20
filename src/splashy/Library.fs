@@ -91,8 +91,8 @@ type Splashy() =
 
     // set other GL states.
     GL.Enable(EnableCap.DepthTest)
-    GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One);
-    GL.Enable(EnableCap.Blend);
+    GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One)
+    GL.Enable(EnableCap.Blend)
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
     refresh_drawables ()
