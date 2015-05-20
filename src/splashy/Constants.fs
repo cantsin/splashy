@@ -22,7 +22,7 @@ module Constants =
   [<Literal>]
   let time_step_constant = 2.0
 
-  let gravity = Vector3d<m/s^2>(0.0<m/s^2>, -9.81<m/s^2>, 0.0<m/s^2>)
+  let gravity = Vector3d<m/s^2>(0.0<_>, -9.81<_>, 0.0<_>)
 
   // pre-calculated.
   let time_step: float<s> = time_step_constant * h / max_velocity
