@@ -13,7 +13,7 @@ module Grid =
 
   type Cell =
     { media: Media;
-      velocity: Vector3d<m/s>; // from the minimal faces, not the center.
+      velocity: Vector3d<m/s>; // from the minimal faces (facing the negative axes).
       pressure: Option<float<kg/(m*s^2)>>;
       layer: Option<int>; }
 
@@ -138,29 +138,22 @@ module Grid =
     let result = v .- where_v
     result .* 1.0<1/(m^2)>
 
-  let internal get_incoming_velocity (dir, n) =
-    let d = Coord.reverse dir
-    match get n with
-      | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity ->
-        Coord.border_value d c.velocity
-      | _ ->
-        0.0<m/s>
-
-  let internal get_outgoing_velocity (where: Coord) v dir =
-    let n = where.get_neighbor dir
-    match get n with
-      | Some c when c.is_not_solid () ->
-        Coord.border_value dir v
-      | _ ->
-        0.0<m/s>
+  let internal get_velocities (filter: Cell -> bool) (where: Coord) =
+    let neighbors = where.neighbors ()
+    let get_velocity (dir, coord) =
+      match get coord with
+        | Some c when filter c ->
+          Coord.border dir c.velocity
+        | _ ->
+          Vector3d.ZERO
+    Seq.map get_velocity neighbors |> Seq.toList
 
   let divergence (where: Coord) =
-    let v = (raw_get where).velocity
-    let borders = Coord.get_borders v
-    let neighbors = where.forward_neighbors ()
-    let incoming = Seq.map get_incoming_velocity neighbors |> Seq.sum
-    let outgoing = Seq.map (fun b -> get_outgoing_velocity where v b) borders |> Seq.sum
-    incoming - outgoing
+    let vs = get_velocities (fun c -> c.is_not_solid ()) where
+    let result = (vs.[0] .- vs.[1]) .+
+                 (vs.[2] .- vs.[3]) .+
+                 (vs.[4] .- vs.[5])
+    result.x + result.y + result.z
 
   let number_neighbors fn (where: Coord) =
     let neighbors = where.neighbors ()
