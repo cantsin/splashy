@@ -49,8 +49,8 @@ module Pressure =
     let n3 = get_gradient neighbors.[2]
     Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
 
-  // set the pressure such that the divergence throughout the fluid is zero.
-  let apply markers dt =
+  // calculate the new pressures based on divergence of the velocity field.
+  let calculate markers dt =
     let n = Seq.length markers
     let lookups = Seq.zip markers { 0..n } |> dict
     let coefficients (coord: Coord) =
@@ -83,15 +83,17 @@ module Pressure =
                      ) markers
                      |> Seq.toList |> vector
     let pressures = m.Solve(b)
-    // set pressures.
-    for (m, p) in Seq.zip markers pressures do
+    // verify.
+    for p in pressures do
       if Double.IsNaN (p / LanguagePrimitives.FloatWithMeasure 1.0) then
         failwith "Invalid pressure."
       if p < 0.0 then
         failwith "Pressure is negative."
-      let c = Grid.raw_get m
-      Grid.set m { c with pressure = Some (p * 1.0<kg/(m*s^2)>) }
-    // calculate the resulting pressure gradient and set velocities.
+    let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
+    Seq.zip markers pressure_units
+
+  // set the pressure such that the divergence throughout the fluid is zero.
+  let apply markers dt =
     let inv_c = dt / Constants.h
     Seq.map (fun (m: Coord) ->
                // only adjust velocity components that border fluid cells

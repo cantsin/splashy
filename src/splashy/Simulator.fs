@@ -11,7 +11,6 @@ open Aabb
 open Coord
 open Grid
 open Layer
-open World
 open Convection
 open Viscosity
 open Pressure
@@ -19,21 +18,8 @@ open Forces
 
 module Simulator =
 
-
-  let mutable markers: Coord list = []         // closest coordinate locations.
-  let mutable locations: Vector3d<m> list = [] // real locations.
-
-  // synchronize our fluid markers with the grid.
-  let sync_markers () =
-    for marker in markers do
-      match Grid.get marker with
-        | Some c when c.is_not_solid () ->
-          Grid.set marker { c with media = Fluid; layer = Some 0; }
-        | None ->
-          if Aabb.contains World.bounds marker then
-            Grid.add marker { Cell.default_cell with media = Fluid; layer = Some 0; }
-        | _ ->
-          ()
+  let mutable private markers: Coord list = []         // closest coordinate locations.
+  let mutable private locations: Vector3d<m> list = [] // real locations.
 
   // for now, advance by frame.
   let move_markers dt =
@@ -44,12 +30,6 @@ module Simulator =
                           ) locations |> Seq.toList
     markers <- Seq.map (fun (l: Vector3d<m>) -> Coord.construct(l.x, l.y, l.z)) locations |> Seq.toList
 
-  let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
-    Seq.iter (fun (where, new_v) ->
-                let c = Grid.raw_get where
-                Grid.set where { c with velocity = new_v }
-              ) velocities
-
   let advance dt =
     let dt = 0.0066
     let dt = dt * 1.0<s> // * Constants.time_step
@@ -57,7 +37,7 @@ module Simulator =
     printfn "Moving simulation forward with time step %A." dt
     Layer.setup (fun () ->
       printfn "  Setup: Synchronizing fluid markers."
-      sync_markers ()
+      Layer.sync_markers markers
       printfn "  Setup: Creating air buffer."
       Layer.create_air_buffer ()
     )
@@ -65,13 +45,14 @@ module Simulator =
     printfn "* Verifying divergence (1)."
     Pressure.check_divergence markers
     printfn "Applying convection term -(∇⋅u)u."
-    Convection.apply markers dt |> update_velocities
+    Convection.apply markers dt |> Layer.update_velocities
     printfn "Applying external forces term F."
-    Forces.apply markers dt |> update_velocities
+    Forces.apply markers dt |> Layer.update_velocities
     printfn "Applying viscosity term v∇²u."
-    Viscosity.apply markers dt |> update_velocities
+    Viscosity.apply markers dt |> Layer.update_velocities
     printfn "Applying pressure term -1/ρ∇p."
-    Pressure.apply markers dt |> update_velocities
+    Pressure.calculate markers dt |> Layer.update_pressures
+    Pressure.apply markers dt |> Layer.update_velocities
     // sanity check, part 2.
     printfn "* Verifying divergence (2)."
     Pressure.check_divergence markers
@@ -86,10 +67,7 @@ module Simulator =
     move_markers dt
     // sanity check, part 3.
     printfn "* Verifying containment."
-    Seq.iter (fun (m: Coord) ->
-                if not (Aabb.contains World.bounds m) then
-                  failwith (sprintf "Error: Fluid marker went outside bounds (example: %O)." m)
-             ) markers
+    Layer.check_containment markers
 
   // generate a random amount of markers to begin with (testing purposes only).
   let generate n =
@@ -105,7 +83,7 @@ module Simulator =
     markers <- Set.ofList new_markers |> Seq.toList
     let to_vec m = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
     locations <- Seq.map to_vec markers |> Seq.toList
-    sync_markers ()
+    Layer.sync_markers markers
     let actual = Seq.length markers
     if actual <> n then
       printfn "Warning: could only generate %d random markers." actual

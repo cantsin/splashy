@@ -1,5 +1,6 @@
 namespace splashy
 
+open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic
 
 open Cell
@@ -12,7 +13,7 @@ module Layer =
 
   let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
 
-  let mutable layers = new Dictionary<Coord, Option<int>>() // used for constructing buffer zones.
+  let mutable private layers = new Dictionary<Coord, Option<int>>() // used for constructing buffer zones.
 
   let setup fn =
     try
@@ -92,3 +93,33 @@ module Layer =
           | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity ->
             Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
           | _ -> ()
+
+  // synchronize our fluid markers with the grid.
+  let sync_markers markers =
+    for marker in markers do
+      match Grid.get marker with
+        | Some c when c.is_not_solid () ->
+          Grid.set marker { c with media = Fluid; layer = Some 0; }
+        | None ->
+          if Aabb.contains World.bounds marker then
+            Grid.add marker { Cell.default_cell with media = Fluid; layer = Some 0; }
+        | _ ->
+          ()
+
+  let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
+    Seq.iter (fun (where, new_v) ->
+                let c = Grid.raw_get where
+                Grid.set where { c with velocity = new_v }
+              ) velocities
+
+  let update_pressures (pressures: seq<Coord * float<kg/(m*s^2)>>) =
+    Seq.iter (fun (where, new_p) ->
+                let c = Grid.raw_get where
+                Grid.set where { c with pressure = Some new_p }
+              ) pressures
+
+  let check_containment markers =
+    Seq.iter (fun (m: Coord) ->
+                if not (Aabb.contains World.bounds m) then
+                  failwith (sprintf "Error: Fluid marker went outside bounds (example: %O)." m)
+             ) markers

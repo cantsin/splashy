@@ -7,7 +7,7 @@ open Coord
 
 module Grid =
 
-  let mutable grid = new Dictionary<Coord, Cell>()
+  let mutable private grid = new Dictionary<Coord, Cell>()
 
   let add where c = grid.Add (where, c)
 

@@ -45,10 +45,11 @@ type Splashy() =
     for (cell: IDrawable) in cells do
       cell.destroy ()
 
-    cells <- [ for (KeyValue(coord, cell)) in Grid.grid do
+    cells <- [ for coord in Grid.filter (fun _ -> true) do
                let x = float32 coord.x
                let y = float32 coord.y
                let z = float32 coord.z
+               let cell = Grid.raw_get coord
                let cellbounds = new CellBounds(cell)
                cellbounds.set_translation (Vector3(x, y, z))
                yield cellbounds :> IDrawable ]
