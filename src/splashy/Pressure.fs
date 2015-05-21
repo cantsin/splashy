@@ -23,7 +23,7 @@ module Pressure =
     Seq.map get_velocity neighbors |> Seq.toList
 
   let divergence (where: Coord) =
-    let vs = get_velocities (fun c -> c.is_not_solid ()) where
+    let vs = get_velocities Cell.media_is_not_solid where
     let result = (vs.[0] .- vs.[1]) .+
                  (vs.[2] .- vs.[3]) .+
                  (vs.[4] .- vs.[5])
@@ -63,7 +63,7 @@ module Pressure =
                                     accum
                                 ) [] neighbors
       // return -N for this marker, where N is number of non solid neighbors.
-      let N = number_neighbors (fun c -> c.is_not_solid ()) coord
+      let N = number_neighbors Cell.media_is_not_solid coord
       (lookups.[coord], - N) :: singulars
     // construct a sparse matrix of coefficients.
     let mutable m = SparseMatrix.zero<float> n n

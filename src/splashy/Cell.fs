@@ -18,3 +18,8 @@ module Cell =
     member this.is_solid () = match this.media with Solid -> true | _ -> false
 
     member this.is_not_solid () = not (this.is_solid ())
+
+  // redundant, but allows for slightly cleaner code, especially when filtering.
+  let media_is_solid (c: Cell) = c.is_solid ()
+
+  let media_is_not_solid (c: Cell) = c.is_not_solid ()

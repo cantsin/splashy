@@ -20,6 +20,8 @@ module Build =
 
     let set c l = ignore <| layers.[c] <- l
 
+    let has_value c l = layers.[c] = l
+
     let filter (fn: Option<int> -> bool) =
       let keys = Seq.filter (fun (KeyValue(k, v)) -> fn v) layers |> Seq.map (fun (KeyValue(k, v)) -> k)
       new List<Coord> (keys)
@@ -30,13 +32,10 @@ module Build =
 
   let max_distance = Operators.max 2 (int (ceil Constants.time_step_constant))
 
+  // reset grid layers.
   let setup fn =
-    // reset grid layers.
     Layers.clear ()
-    let coords = Grid.filter (fun _ -> true)
-    Seq.iter (fun m ->
-                Layers.set m None
-              ) coords
+    Grid.filter (fun _ -> true) |> Seq.iter (fun m -> Layers.set m None)
     fn ()
 
   // synchronize our fluid markers with the grid.
@@ -66,19 +65,19 @@ module Build =
 
   let delete_unused () =
     let leftover = Layers.filter (fun v -> v = None)
-    Seq.iter delete leftover
+    Seq.iter Grid.delete leftover
     Seq.iter Layers.delete leftover
 
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
     for i in 1..max_distance do
-      let previous_layer_count = Some (i - 1)
-      let nonsolids = Grid.filter (fun c -> c.is_not_solid ())
-      let previous_layer = Seq.filter (fun c -> (Layers.get c) = previous_layer_count) nonsolids
-      let all_neighbors = Seq.collect (fun (c: Coord) -> c.neighbors ()) previous_layer
+      let all_neighbors =
+        Grid.filter Cell.media_is_not_solid |>
+        Seq.filter (fun c -> Layers.has_value c (Some (i - 1))) |>
+        Seq.collect (fun c -> c.neighbors ())
       for (_, where) in all_neighbors do
         match Grid.get where with
-          | Some c when c.media <> Fluid && ((Layers.get where) = None) ->
+          | Some c when c.media <> Fluid && Layers.has_value where None ->
             Layers.set where (Some i)
           | None ->
             if World.contains where then
@@ -96,9 +95,8 @@ module Build =
   let propagate_velocities () =
     for i in 1..max_distance do
       let nonfluid = Layers.filter (fun v -> v = None)
-      let previous_layer_count = Some (i - 1)
       let get_previous_layer (_, n) = match Grid.get n with
-                                        | Some c when Layers.get n <> previous_layer_count -> true
+                                        | Some c when Layers.has_value n (Some (i - 1)) -> true
                                         | _ -> false
       for m in nonfluid do
         let neighbors = m.neighbors ()
@@ -114,19 +112,26 @@ module Build =
                 let new_v = Coord.merge dir c.velocity pla
                 Grid.set m { c with velocity = new_v }
               | _ -> ()
-          Layers.set m previous_layer_count
+          Layers.set m (Some (i - 1))
 
   // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
-    let solids = Grid.filter (fun c -> c.is_solid ())
-    for solid in solids do
-      let neighbors = solid.neighbors ()
-      for (dir, neighbor) in neighbors do
-        let inward = Coord.reverse dir
-        match Grid.get neighbor with
-          | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity ->
-            Grid.set neighbor { n with velocity = Coord.merge inward n.velocity Vector3d.ZERO }
-          | _ -> ()
+    let solids = Grid.filter Cell.media_is_solid
+    let has_inward_velocity (dir, neighbor) =
+      let inward = Coord.reverse dir
+      match Grid.get neighbor with
+        | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity -> true
+        | _ -> false
+    Seq.collect (fun (solid: Coord) ->
+                   let neighbors = solid.neighbors ()
+                   let filtered = Seq.filter has_inward_velocity neighbors
+                   Seq.map (fun (dir, neighbor) ->
+                              let inward = Coord.reverse dir
+                              let n = Grid.raw_get neighbor
+                              let new_v = Coord.merge inward n.velocity Vector3d.ZERO
+                              (neighbor, new_v)
+                           ) filtered
+                 ) solids
 
   let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
     Seq.iter (fun (where, new_v) ->
