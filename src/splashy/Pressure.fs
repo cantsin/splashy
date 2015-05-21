@@ -83,12 +83,6 @@ module Pressure =
                      ) markers
                      |> Seq.toList |> vector
     let pressures = m.Solve(b)
-    // verify.
-    for p in pressures do
-      if Double.IsNaN (p / LanguagePrimitives.FloatWithMeasure 1.0) then
-        failwith "Invalid pressure."
-      if p < 0.0 then
-        failwith "Pressure is negative."
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units
 
@@ -123,6 +117,16 @@ module Pressure =
                let v = c.velocity .- offset
                (m, v) :: (nvs |> Seq.toList)
             ) markers |> Seq.concat
+
+  // verify that pressures look sane.
+  let check_pressures markers =
+    for m in markers do
+      let c = Grid.raw_get m
+      let p = c.pressure |> Option.get |> (fun x -> x / LanguagePrimitives.FloatWithMeasure 1.0)
+      if Double.IsNaN p then
+        failwith "Invalid pressure."
+      if p < 0.0 then
+        failwith "Pressure is negative."
 
   // verify that for each marker, ∇⋅u = 0.
   let check_divergence markers =

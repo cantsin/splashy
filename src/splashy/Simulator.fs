@@ -60,6 +60,9 @@ module Simulator =
     Pressure.calculate markers dt |> Grid.update_pressures
     Pressure.apply markers dt |> Grid.update_velocities
     // sanity check, part 2.
+    printfn "* Verifying pressures."
+    Pressure.check_pressures markers
+    // sanity check, part 3.
     printfn "* Verifying divergence (2)."
     Pressure.check_divergence markers
     printfn "Cleaning up fluid velocities."
