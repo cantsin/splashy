@@ -40,6 +40,8 @@ module Simulator =
       Build.add_new_markers markers |> Grid.add_cells
       printfn "  Setup: Synchronizing fluid markers."
       Build.sync_markers markers |> Grid.update_media
+      printfn "  Setup: Setting fluid layers."
+      Build.set_fluid_layers markers
       printfn "  Setup: Creating air buffer."
       Build.create_air_buffer () |> Grid.add_cells
       printfn "  Setup: Removing unused layers."

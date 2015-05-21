@@ -40,30 +40,34 @@ module Build =
     fn ()
 
   let add_new_markers markers =
-    let mutable additions = []
-    for marker in markers do
-      match Grid.get marker with
-        | None when World.contains marker ->
-          let new_cell = { media = Fluid;
-                           velocity = Vector3d.ZERO;
-                           pressure = None; }
-          additions <- (marker, new_cell) :: additions
-          Layers.set marker (Some 0)
-        | _ ->
-          ()
-    additions
+    Seq.fold (fun accum (marker: Coord) ->
+                match Grid.get marker with
+                  | None when World.contains marker ->
+                    let new_cell = { media = Fluid;
+                                     velocity = Vector3d.ZERO;
+                                     pressure = None; }
+                    (marker, new_cell) :: accum
+                  | _ ->
+                    accum
+              ) [] markers
 
   // synchronize our fluid markers with the grid.
   let sync_markers markers =
-    let mutable result = []
+    Seq.fold (fun accum (marker: Coord) ->
+                match Grid.get marker with
+                  | Some c when c.is_not_solid () ->
+                     (marker, Fluid) :: accum
+                  | _ ->
+                    accum
+             ) [] markers
+
+  let set_fluid_layers markers =
     for marker in markers do
       match Grid.get marker with
-        | Some c when c.is_not_solid () ->
-          result <- (marker, Fluid) :: result
+        | Some c ->
           Layers.set marker (Some 0)
         | _ ->
-          ()
-    result
+          failwith "Fluid does not have corresponding cell."
 
   // reset grid layers but mark fluids as layer 0.
   let cleanup fn =
