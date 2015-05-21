@@ -27,8 +27,7 @@ module Grid =
       | _ -> grid.[where] <- c
 
   let filter (fn: Cell -> bool) =
-    let result = Seq.filter (fun (KeyValue(k, v)) -> fn v) grid
-    let keys = Seq.map (fun (KeyValue(k, v)) -> k) result
-    // make a copy: we want to avoid writing to the dictionary while
-    // potentially iterating over it.
-    new List<Coord> (keys)
+    // make a copy: we want to avoid writing to the dictionary while potentially iterating over it.
+    Seq.filter (fun (KeyValue(k, v)) -> fn v) grid |>
+    Seq.map (fun (KeyValue(k, v)) -> k) |>
+    fun keys -> new List<Coord> (keys)

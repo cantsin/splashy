@@ -61,7 +61,7 @@ module Simulator =
     printfn "Cleaning up fluid velocities."
     Build.cleanup (fun () ->
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
-      Build.propagate_velocities ()
+      Build.propagate_velocities () |> Build.update_velocities
       printfn "  Cleanup: Setting solid cell velocities to zero."
       Build.zero_solid_velocities() |> Build.update_velocities
     )

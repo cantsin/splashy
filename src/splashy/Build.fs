@@ -23,8 +23,10 @@ module Build =
     let has_value c l = layers.[c] = l
 
     let filter (fn: Option<int> -> bool) =
-      let keys = Seq.filter (fun (KeyValue(k, v)) -> fn v) layers |> Seq.map (fun (KeyValue(k, v)) -> k)
-      new List<Coord> (keys)
+      // make a copy: we want to avoid writing to the dictionary while potentially iterating over it.
+      Seq.filter (fun (KeyValue(k, v)) -> fn v) layers |>
+      Seq.map (fun (KeyValue(k, v)) -> k) |>
+      fun keys -> new List<Coord> (keys)
 
     let delete c = ignore <| layers.Remove c
 
@@ -93,26 +95,29 @@ module Build =
 
   // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =
+    let mutable result = []
     for i in 1..max_distance do
       let nonfluid = Layers.filter (fun v -> v = None)
-      let get_previous_layer (_, n) = match Grid.get n with
-                                        | Some c when Layers.has_value n (Some (i - 1)) -> true
-                                        | _ -> false
+      let get_previous_layer (_, neighbor) =
+        match Grid.get neighbor with
+          | Some c when Layers.has_value neighbor (Some (i - 1)) -> true
+          | _ -> false
       for m in nonfluid do
         let neighbors = m.neighbors ()
         let previous_layer = Seq.filter get_previous_layer neighbors
         let n = Seq.length previous_layer
         if n <> 0 then
           let c = Grid.raw_get m
-          let velocities = Seq.map (fun (_, where) -> (Grid.raw_get where).velocity) previous_layer
-          let pla = Vector.average velocities
           for dir, neighbor in neighbors do
             match Grid.get neighbor with
               | Some n when n.media <> Fluid && Coord.is_bordering dir c.velocity ->
+                let velocities = Seq.map (fun (_, where) -> (Grid.raw_get where).velocity) previous_layer
+                let pla = Vector.average velocities
                 let new_v = Coord.merge dir c.velocity pla
-                Grid.set m { c with velocity = new_v }
+                result <- (m, new_v) :: result
               | _ -> ()
           Layers.set m (Some (i - 1))
+    result
 
   // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
