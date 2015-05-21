@@ -11,22 +11,23 @@ open Grid
 
 module Pressure =
 
-  // THIS IS WRONG argh
-  let internal get_velocities (filter: Cell -> bool) (where: Coord) =
-    let neighbors = where.neighbors ()
-    let get_velocity (dir, coord) =
-      match get coord with
-        | Some c when filter c ->
-          Coord.border dir c.velocity
-        | _ ->
-          Vector3d.ZERO
-    Seq.map get_velocity neighbors |> Seq.toList
-
   let divergence (where: Coord) =
-    let vs = get_velocities Cell.media_is_not_solid where
-    let result = (vs.[0] .- vs.[1]) .+
-                 (vs.[2] .- vs.[3]) .+
-                 (vs.[4] .- vs.[5])
+    let cell = Grid.raw_get where
+    let is_nonsolid (_, n) = let c = Grid.raw_get n in c.is_not_solid ()
+    let backward = where.backward_neighbors ()
+    let outgoing = Seq.filter is_nonsolid backward |>
+                   Seq.fold (fun accum (dir, _) ->
+                              let v = Coord.border dir cell.velocity
+                              accum .+ v
+                            ) Vector3d.ZERO
+    let forward = where.forward_neighbors ()
+    let incoming = Seq.filter is_nonsolid forward |>
+                   Seq.fold (fun accum (dir, n) ->
+                               let c = raw_get n
+                               let v = Coord.border dir c.velocity
+                               accum .+ v
+                            ) Vector3d.ZERO
+    let result = incoming .- outgoing
     result.x + result.y + result.z
 
   let number_neighbors fn (where: Coord) =
