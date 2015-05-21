@@ -39,6 +39,7 @@ module Build =
     Grid.filter (fun _ -> true) |> Seq.iter (fun m -> Layers.set m None)
     fn ()
 
+  // add new water cells.
   let add_new_markers markers =
     Seq.fold (fun accum (marker: Coord) ->
                 match Grid.get marker with
@@ -51,7 +52,7 @@ module Build =
                     accum
               ) [] markers
 
-  // synchronize our fluid markers with the grid.
+  // move fluid cells into air cells if applicable.
   let sync_markers markers =
     Seq.fold (fun accum (marker: Coord) ->
                 match Grid.get marker with

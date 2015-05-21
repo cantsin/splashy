@@ -10,6 +10,7 @@ open OpenTK.Graphics
 open OpenTK.Graphics.OpenGL
 open OpenTK.Input
 
+open Cell
 open Aabb
 open Drawables
 open Grid
@@ -45,19 +46,25 @@ type Splashy() =
     for (cell: IDrawable) in cells do
       cell.destroy ()
 
-    cells <- [ for coord in Grid.filter (fun _ -> true) do
-               let x = float32 coord.x
-               let y = float32 coord.y
-               let z = float32 coord.z
-               let cell = Grid.raw_get coord
-               let cellbounds = new CellBounds(cell)
-               cellbounds.set_translation (Vector3(x, y, z))
-               yield cellbounds :> IDrawable ]
+    let get_drawables fn =
+      [ for coord in Grid.filter fn do
+        let x = float32 coord.x
+        let y = float32 coord.y
+        let z = float32 coord.z
+        let cell = Grid.raw_get coord
+        let cellbounds = new CellBounds(cell)
+        cellbounds.set_translation (Vector3(x, y, z))
+        yield cellbounds :> IDrawable ]
 
+    let air = get_drawables (fun c -> c.media = Air)
+    let fluid = get_drawables (fun c -> c.media = Fluid)
+    let solids = get_drawables (fun c -> c.media = Solid)
+
+    // draw in a specific order for transparency reasons.
+    cells <- fluid @ solids @ air
     for (cell: IDrawable) in cells do
       cell.prepare program
 
-    // world bound needs to be drawn last (transparency reasons).
     drawables <- cells @ [(world_bounds :> IDrawable)]
 
   override o.OnLoad e =
