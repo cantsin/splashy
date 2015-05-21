@@ -1,6 +1,5 @@
 namespace splashy
 
-open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic
 
 open Cell
@@ -40,21 +39,31 @@ module Build =
     Grid.filter (fun _ -> true) |> Seq.iter (fun m -> Layers.set m None)
     fn ()
 
+  let add_new_markers markers =
+    let mutable additions = []
+    for marker in markers do
+      match Grid.get marker with
+        | None when World.contains marker ->
+          let new_cell = { media = Fluid;
+                           velocity = Vector3d.ZERO;
+                           pressure = None; }
+          additions <- (marker, new_cell) :: additions
+          Layers.set marker (Some 0)
+        | _ ->
+          ()
+    additions
+
   // synchronize our fluid markers with the grid.
   let sync_markers markers =
+    let mutable result = []
     for marker in markers do
       match Grid.get marker with
         | Some c when c.is_not_solid () ->
-          Grid.set marker { c with media = Fluid; }
+          result <- (marker, Fluid) :: result
           Layers.set marker (Some 0)
-        | None ->
-          if World.contains marker then
-            Grid.add marker { media = Fluid;
-                              velocity = Vector3d.ZERO;
-                              pressure = None; }
-            Layers.set marker (Some 0)
         | _ ->
           ()
+    result
 
   // reset grid layers but mark fluids as layer 0.
   let cleanup fn =
@@ -67,11 +76,12 @@ module Build =
 
   let delete_unused () =
     let leftover = Layers.filter (fun v -> v = None)
-    Seq.iter Grid.delete leftover
     Seq.iter Layers.delete leftover
+    leftover
 
   // create air buffer zones around the fluid markers.
   let create_air_buffer () =
+    let mutable additions = []
     for i in 1..max_distance do
       let all_neighbors =
         Grid.filter Cell.media_is_not_solid |>
@@ -82,16 +92,18 @@ module Build =
           | Some c when c.media <> Fluid && Layers.has_value where None ->
             Layers.set where (Some i)
           | None ->
-            if World.contains where then
-              Grid.add where { media = Air;
+            let new_cell = if World.contains where then
+                             { media = Air;
                                velocity = Vector3d.ZERO;
                                pressure = Some Constants.atmospheric_pressure; }
-            else
-              Grid.add where { media = Solid;
+                           else
+                             { media = Solid;
                                velocity = Vector3d.ZERO;
                                pressure = None; }
+            additions <- (where, new_cell) :: additions
             Layers.set where (Some i)
           | _ -> ()
+    additions |> Set.ofSeq
 
   // propagate the fluid velocities into the buffer zone.
   let propagate_velocities () =
@@ -137,18 +149,6 @@ module Build =
                               (neighbor, new_v)
                            ) filtered
                  ) solids
-
-  let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
-    Seq.iter (fun (where, new_v) ->
-                let c = Grid.raw_get where
-                Grid.set where { c with velocity = new_v }
-              ) velocities
-
-  let update_pressures (pressures: seq<Coord * float<kg/(m*s^2)>>) =
-    Seq.iter (fun (where, new_p) ->
-                let c = Grid.raw_get where
-                Grid.set where { c with pressure = Some new_p }
-              ) pressures
 
   let check_containment markers =
     Seq.iter (fun (m: Coord) ->

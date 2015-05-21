@@ -1,17 +1,15 @@
 namespace splashy
 
+open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic
 
+open Vector
 open Cell
 open Coord
 
 module Grid =
 
   let mutable private grid = new Dictionary<Coord, Cell>()
-
-  let add where c = grid.Add (where, c)
-
-  let delete where = ignore <| grid.Remove where
 
   let get where =
     match grid.ContainsKey where with
@@ -21,13 +19,39 @@ module Grid =
   // unsafe. use only when absolutely certain that a corresponding grid cell exists.
   let raw_get where = get where |> Option.get
 
-  let set where c =
-    match get where with
-      | None -> failwith "Tried to set non-existent cell."
-      | _ -> grid.[where] <- c
-
   let filter (fn: Cell -> bool) =
     // make a copy: we want to avoid writing to the dictionary while potentially iterating over it.
     Seq.filter (fun (KeyValue(k, v)) -> fn v) grid |>
     Seq.map (fun (KeyValue(k, v)) -> k) |>
     fun keys -> new List<Coord> (keys)
+
+  let private delete where = ignore <| grid.Remove where
+
+  let private add (where, c) = grid.Add (where, c)
+
+  let private set where c =
+    match get where with
+      | None -> failwith "Tried to set non-existent cell."
+      | _ -> grid.[where] <- c
+
+  let add_cells (cells: seq<Coord * Cell>) = Seq.iter add cells
+
+  let delete_cells (cells: seq<Coord>) = Seq.iter delete cells
+
+  let update_media (mediums: seq<Coord * Media>) =
+    Seq.iter (fun (where, new_m) ->
+                let c = raw_get where
+                set where { c with media = new_m }
+             ) mediums
+
+  let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
+    Seq.iter (fun (where, new_v) ->
+                let c = raw_get where
+                set where { c with velocity = new_v }
+              ) velocities
+
+  let update_pressures (pressures: seq<Coord * float<kg/(m*s^2)>>) =
+    Seq.iter (fun (where, new_p) ->
+                let c = raw_get where
+                set where { c with pressure = Some new_p }
+              ) pressures
