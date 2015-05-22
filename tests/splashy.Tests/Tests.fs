@@ -2,11 +2,22 @@ module splashy.Tests
 
 open splashy
 open NUnit.Framework
+open FsCheck
+open FsCheck.NUnit
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
+open System
 
 open Coord
 open Vector
 open Cell
+
+type Generators =
+  static member arbVelocity =
+    Arb.generate<float<m/s>>
+    |> Gen.suchThat (fun f -> not (Double.IsNaN (f / LanguagePrimitives.FloatWithMeasure 1.0)))
+    |> Gen.three
+    |> Gen.map (fun (x, y, z) -> Vector3d<m/s>(x, y, z))
+    |> Arb.fromGen
 
 [<TestFixture>]
 type pressure_fixture () =
@@ -17,6 +28,7 @@ type pressure_fixture () =
 
   [<SetUp>]
   member test.init () =
+    Arb.register<Generators>() |> ignore
     let c = (coord, air)
     let n = Seq.map (fun (_, n) -> (n, air)) neighbors |> Seq.toList
     Grid.add_cells (c :: n)
@@ -33,9 +45,10 @@ type pressure_fixture () =
 
   [<Test>]
   member test.``divergence, standalone cell`` () =
-    Grid.update_velocities [(coord, Vector3d(1.0<m/s>, 1.0<m/s>, 1.0<m/s>))]
-    let d = Pressure.divergence coord
-    Assert.AreEqual(d, -3.0<m/s>)
+    Check.QuickThrowOnFailure(
+      fun (v: Vector3d<m/s>) ->
+        Grid.update_velocities [(coord, v)]
+        Pressure.divergence coord = - (v.x + v.y + v.z))
 
   [<Test>]
   member test.``divergence, surrounded by rock`` () =

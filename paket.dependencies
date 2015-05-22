@@ -9,5 +9,7 @@ nuget FAKE
 nuget SourceLink.Fake
 nuget OpenTK
 nuget MathNet.Numerics.FSharp
+nuget FsCheck
+nuget FsCheck.NUnit
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx

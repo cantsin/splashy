@@ -15,18 +15,18 @@ module Pressure =
     let cell = Grid.raw_get where
     let is_nonsolid (_, n) = let c = Grid.raw_get n in c.is_not_solid ()
     let backward = where.backward_neighbors ()
-    let outgoing = Seq.filter is_nonsolid backward |>
-                   Seq.fold (fun accum (dir, _) ->
-                              let v = Coord.border dir cell.velocity
-                              accum .+ v
-                            ) Vector3d.ZERO
+    let outgoing = Seq.filter is_nonsolid backward
+                   |> Seq.fold (fun accum (dir, _) ->
+                                  let v = Coord.border dir cell.velocity
+                                  accum .+ v
+                               ) Vector3d.ZERO
     let forward = where.forward_neighbors ()
-    let incoming = Seq.filter is_nonsolid forward |>
-                   Seq.fold (fun accum (dir, n) ->
-                               let c = raw_get n
-                               let v = Coord.border dir c.velocity
-                               accum .+ v
-                            ) Vector3d.ZERO
+    let incoming = Seq.filter is_nonsolid forward
+                   |> Seq.fold (fun accum (dir, n) ->
+                                  let c = raw_get n
+                                  let v = Coord.border dir c.velocity
+                                  accum .+ v
+                               ) Vector3d.ZERO
     let result = incoming .- outgoing
     result.x + result.y + result.z
 
@@ -82,7 +82,8 @@ module Pressure =
                        let result: float<kg/(m*s^2)> = c * f - (s * a) // ensure we have units of pressure.
                        float result
                      ) markers
-                     |> Seq.toList |> vector
+                     |> Seq.toList
+                     |> vector
     let pressures = m.Solve(b)
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units

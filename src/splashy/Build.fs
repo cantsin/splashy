@@ -23,9 +23,9 @@ module Build =
 
     let filter (fn: Option<int> -> bool) =
       // make a copy: we want to avoid writing to the dictionary while potentially iterating over it.
-      Seq.filter (fun (KeyValue(k, v)) -> fn v) layers |>
-      Seq.map (fun (KeyValue(k, v)) -> k) |>
-      fun keys -> new List<Coord> (keys)
+      Seq.filter (fun (KeyValue(k, v)) -> fn v) layers
+      |> Seq.map (fun (KeyValue(k, v)) -> k)
+      |> fun keys -> new List<Coord> (keys)
 
     let delete c = ignore <| layers.Remove c
 
@@ -89,9 +89,9 @@ module Build =
     let mutable additions = []
     for i in 1..max_distance do
       let all_neighbors =
-        Grid.filter Cell.media_is_not_solid |>
-        Seq.filter (fun c -> Layers.has_value c (Some (i - 1))) |>
-        Seq.collect (fun c -> c.neighbors ())
+        Grid.filter Cell.media_is_not_solid
+        |> Seq.filter (fun c -> Layers.has_value c (Some (i - 1)))
+        |> Seq.collect (fun c -> c.neighbors ())
       for (_, where) in all_neighbors do
         match Grid.get where with
           | Some c when c.media <> Fluid && Layers.has_value where None ->
