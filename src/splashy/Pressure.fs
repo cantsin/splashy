@@ -127,6 +127,10 @@ module Pressure =
       let p = c.pressure |> Option.get |> (fun x -> x / LanguagePrimitives.FloatWithMeasure 1.0)
       if Double.IsNaN p then
         failwith "Invalid pressure."
+      if Double.IsNegativeInfinity p then
+        failwith "Pressure is negative infinity."
+      if Double.IsPositiveInfinity p then
+        failwith "Pressure is positive infinity."
       if p < 0.0 then
         failwith "Pressure is negative."
 
