@@ -31,24 +31,10 @@ module Pressure =
     result.x + result.y + result.z
 
   let number_neighbors fn (where: Coord) =
-    let neighbors = where.neighbors ()
-    let result = Seq.filter (fun (_, n) -> match get n with | Some c -> fn c | None -> false) neighbors
-    result |> Seq.length |> float
-
-  let pressure_gradient (where: Coord) =
-    let c = raw_get where
-    let p = Option.get c.pressure
-    let neighbors = where.backward_neighbors ()
-    let get_gradient (_, n) =
-      match get n with
-        | Some c when c.is_not_solid () ->
-          Option.get c.pressure
-        | _ ->
-          0.0<kg/(m*s^2)>
-    let n1 = get_gradient neighbors.[0]
-    let n2 = get_gradient neighbors.[1]
-    let n3 = get_gradient neighbors.[2]
-    Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
+    where.neighbors ()
+    |> Seq.filter (fun (_, n) -> match get n with | Some c -> fn c | None -> false)
+    |> Seq.length
+    |> float
 
   // calculate the new pressures based on divergence of the velocity field.
   let calculate markers dt =
@@ -80,40 +66,53 @@ module Pressure =
                        let a = number_neighbors (fun c -> c.media = Air) m
                        let s = Constants.atmospheric_pressure
                        let result: float<kg/(m*s^2)> = c * f - (s * a) // ensure we have units of pressure.
-                       float result
+                       float result // remove pressure units (matrix solver does not support units).
                      ) markers
                      |> Seq.toList
                      |> vector
     let pressures = m.Solve(b)
+    // add the pressure units back.
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units
+
+  let pressure_gradient (where: Coord) =
+    let c = raw_get where
+    let p = Option.get c.pressure
+    let neighbors = where.backward_neighbors ()
+    let get_gradient (_, n) =
+      match get n with
+        | Some c when c.is_not_solid () ->
+          Option.get c.pressure
+        | _ ->
+          0.0<kg/(m*s^2)>
+    let n1 = get_gradient neighbors.[0]
+    let n2 = get_gradient neighbors.[1]
+    let n3 = get_gradient neighbors.[2]
+    Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
 
   // set the pressure such that the divergence throughout the fluid is zero.
   let apply markers dt =
     let inv_c = dt / Constants.h
     Seq.map (fun (m: Coord) ->
                // only adjust velocity components that border fluid cells
-               let neighbors = m.neighbors ()
-               let borders = Seq.filter (fun (dir, n) ->
-                                           let d = Coord.reverse dir
+               let gradient = pressure_gradient m
+               let neighbors = m.forward_neighbors ()
+               let borders = Seq.filter (fun (_, n) ->
                                            match get n with
-                                             | Some c when c.is_not_solid () && Coord.is_bordering d c.velocity -> true
+                                             | Some c when c.is_not_solid () -> true
                                              | _ -> false
                                         ) neighbors
                let nvs = Seq.map (fun (dir, n) ->
-                                    let d = Coord.reverse dir
                                     let c = Grid.raw_get n
-                                    let new_velocity = Coord.border d c.velocity
-                                    let gradient: Vector3d<kg/(m*s^2)> = pressure_gradient n
                                     let density = match c.media with
                                                     | Air -> Constants.air_density
                                                     | Fluid -> Constants.fluid_density
                                                     | _ -> failwith "no density for media found."
+                                    let gradient = pressure_gradient n
                                     let offset = gradient .* (inv_c / density)
-                                    let v = new_velocity .- offset
+                                    let v = Coord.border dir (c.velocity .- offset)
                                     (n, v)) borders
                let c = Grid.raw_get m
-               let gradient = pressure_gradient m
                let density = Constants.fluid_density
                let offset = gradient .* (inv_c / density)
                let v = c.velocity .- offset
