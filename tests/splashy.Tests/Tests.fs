@@ -5,7 +5,6 @@ open NUnit.Framework
 open FsCheck
 open FsCheck.NUnit
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
-open System
 
 open Coord
 open Vector
@@ -20,9 +19,7 @@ type Generators =
 
   static member arb_velocity =
     Arb.generate<float<m/s>>
-    |> Gen.suchThat (fun f -> not (Double.IsNaN (f / LanguagePrimitives.FloatWithMeasure 1.0)))
-    |> Gen.suchThat (fun f -> not (Double.IsPositiveInfinity (f / LanguagePrimitives.FloatWithMeasure 1.0)))
-    |> Gen.suchThat (fun f -> not (Double.IsNegativeInfinity (f / LanguagePrimitives.FloatWithMeasure 1.0)))
+    |> Gen.suchThat Util.is_valid_unit
     |> Gen.three
     |> Gen.map (fun (x, y, z) -> Vector3d<m/s>(x, y, z))
     |> Arb.fromGen
