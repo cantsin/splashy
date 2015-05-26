@@ -75,16 +75,18 @@ module Pressure =
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units
 
-  let pressure_gradient (where: Coord) =
+  let gradient (where: Coord) =
     let c = raw_get where
     let p = Option.get c.pressure
     let neighbors = where.backward_neighbors ()
     let get_gradient (_, n) =
       match get n with
-        | Some c when c.is_not_solid () ->
-          Option.get c.pressure
-        | _ ->
+        | Some c when c.is_solid () ->
           0.0<kg/(m*s^2)>
+        | Some c ->
+          Option.get c.pressure
+        | None ->
+          Constants.atmospheric_pressure
     let n1 = get_gradient neighbors.[0]
     let n2 = get_gradient neighbors.[1]
     let n3 = get_gradient neighbors.[2]
@@ -95,7 +97,7 @@ module Pressure =
     let inv_c = dt / Constants.h
     Seq.map (fun (m: Coord) ->
                // only adjust velocity components that border fluid cells
-               let gradient = pressure_gradient m
+               let c_gradient = gradient m
                let neighbors = m.forward_neighbors ()
                let borders = Seq.filter (fun (_, n) ->
                                            match get n with
@@ -108,13 +110,13 @@ module Pressure =
                                                     | Air -> Constants.air_density
                                                     | Fluid -> Constants.fluid_density
                                                     | _ -> failwith "no density for media found."
-                                    let gradient = pressure_gradient n
-                                    let offset = gradient .* (inv_c / density)
+                                    let n_gradient = gradient n
+                                    let offset = n_gradient .* (inv_c / density)
                                     let v = Coord.border dir (c.velocity .- offset)
                                     (n, v)) borders
                let c = Grid.raw_get m
                let density = Constants.fluid_density
-               let offset = gradient .* (inv_c / density)
+               let offset = c_gradient .* (inv_c / density)
                let v = c.velocity .- offset
                (m, v) :: (nvs |> Seq.toList)
             ) markers |> Seq.concat

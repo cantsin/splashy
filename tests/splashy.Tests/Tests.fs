@@ -6,6 +6,7 @@ open FsCheck
 open FsCheck.NUnit
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 
+open Constants
 open Coord
 open Vector
 open Cell
@@ -35,7 +36,7 @@ type Generators =
 [<TestFixture>]
 type pressure_fixture () =
 
-  let air = { media = Air; pressure = None; velocity = Vector3d.ZERO }
+  let air = { media = Air; pressure = Some Constants.atmospheric_pressure; velocity = Vector3d.ZERO }
   let coord = { x = 0<m>; y = 0<m>; z = 0<m>; }
   let neighbors = coord.neighbors ()
 
@@ -93,3 +94,17 @@ type pressure_fixture () =
          let d = get_divergence nd.cell_velocity nd.mediums nd.velocities
          let real_d = Pressure.divergence coord
          (d = real_d) || (abs (real_d - d)) < 0.0000001<m/s>))
+
+  [<Test>]
+  member test.``pressure, no velocities`` () =
+    let p = Pressure.gradient coord
+    Assert.AreEqual(p, Vector3d<kg/(m*s^2)>.ZERO)
+
+  [<Test>]
+  member test.``pressure, surrounded by rock`` () =
+    let mediums = Seq.map (fun (_, n) -> (n, Solid)) neighbors |> Seq.toList
+    Grid.update_media mediums
+    Check.QuickThrowOnFailure(
+      fun (v: float<kg/(m*s^2)>) ->
+        Grid.update_pressures [(coord, v)]
+        Pressure.gradient coord = Vector3d<kg/(m*s^2)>(v, v, v))

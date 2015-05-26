@@ -3,6 +3,8 @@ namespace splashy
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System
 
+open Util
+
 module Vector =
   type Vector3d<[<Measure>] 'u> =
     struct
@@ -11,9 +13,8 @@ module Vector =
       val z: float<'u>
 
       new(x: float<'u>, y: float<'u>, z:float<'u>) =
-        let is_nan f = Double.IsNaN (f / LanguagePrimitives.FloatWithMeasure 1.0)
-        if is_nan x || is_nan y || is_nan z then
-          failwith "Vector3d got NaN."
+        if not (Util.is_valid_unit x && Util.is_valid_unit y && Util.is_valid_unit z) then
+          failwith <| sprintf "Vector3d [%A; %A; %A] has an invalid quantity: either NaN or ±Infinity." x y z
         { x = x; y = y; z = z; }
 
       new(x: int<'u>, y: int<'u>, z:int<'u>) =
