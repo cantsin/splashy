@@ -75,65 +75,66 @@ module Pressure =
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units
 
-  let gradient (where: Coord) =
-    let c = raw_get where
-    let p = Option.get c.pressure
-    let neighbors = where.backward_neighbors ()
-    let get_gradient (_, n) =
-      match get n with
-        | Some c when c.is_solid () ->
-          0.0<kg/(m*s^2)>
-        | Some c ->
-          Option.get c.pressure
-        | None ->
-          Constants.atmospheric_pressure
-    let n1 = get_gradient neighbors.[0]
-    let n2 = get_gradient neighbors.[1]
-    let n3 = get_gradient neighbors.[2]
-    Vector3d<kg/(m*s^2)>(p - n1, p - n2, p - n3)
+  let get_pressure (where: Coord) =
+    match Grid.get where with
+      | Some c when c.is_solid () ->
+        0.0<kg/(m*s^2)>
+      | Some c ->
+        Option.get c.pressure
+      | None ->
+        Constants.atmospheric_pressure
+
+  let backwards_gradient (where: Coord) p =
+    let p1 = where.get_neighbor NegX |> get_pressure
+    let p2 = where.get_neighbor NegY |> get_pressure
+    let p3 = where.get_neighbor NegZ |> get_pressure
+    Vector3d<kg/(m*s^2)>(p - p1, p - p2, p - p3)
+
+  let get_adjusted_velocity (where: Coord) p inv_c dir =
+    let n = where.get_neighbor dir
+    let v = match Grid.get n with
+              | Some c when c.is_not_solid() ->
+                let density = if c.media = Air then Constants.air_density else Constants.fluid_density
+                let pressure = c.pressure |> Option.get
+                let offset = (pressure - p) * (inv_c / density)
+                let vel = match dir with
+                            | PosX -> Vector3d<m/s>(offset, 0.0<_>, 0.0<_>)
+                            | PosY -> Vector3d<m/s>(0.0<_>, offset, 0.0<_>)
+                            | PosZ -> Vector3d<m/s>(0.0<_>, 0.0<_>, offset)
+                            | _ -> failwith "Invalid direction."
+                c.velocity .- vel
+              | _ ->
+                Vector3d<m/s>.ZERO
+    (n, v)
 
   // set the pressure such that the divergence throughout the fluid is zero.
   let apply markers dt =
     let inv_c = dt / Constants.h
     Seq.map (fun (m: Coord) ->
-               // only adjust velocity components that border fluid cells
-               let c_gradient = gradient m
-               let neighbors = m.forward_neighbors ()
-               let borders = Seq.filter (fun (_, n) ->
-                                           match get n with
-                                             | Some c when c.is_not_solid () -> true
-                                             | _ -> false
-                                        ) neighbors
-               let nvs = Seq.map (fun (dir, n) ->
-                                    let c = Grid.raw_get n
-                                    let density = match c.media with
-                                                    | Air -> Constants.air_density
-                                                    | Fluid -> Constants.fluid_density
-                                                    | _ -> failwith "no density for media found."
-                                    let n_gradient = gradient n
-                                    let offset = n_gradient .* (inv_c / density)
-                                    let v = Coord.border dir (c.velocity .- offset)
-                                    (n, v)) borders
+               // negative gradients
                let c = Grid.raw_get m
+               let p = c.pressure |> Option.get
+               let gradient = backwards_gradient m p
                let density = Constants.fluid_density
-               let offset = c_gradient .* (inv_c / density)
+               let offset = gradient .* (inv_c / density)
                let v = c.velocity .- offset
-               (m, v) :: (nvs |> Seq.toList)
+               // positive gradients
+               let nvs = [get_adjusted_velocity m p inv_c PosX;
+                          get_adjusted_velocity m p inv_c PosY;
+                          get_adjusted_velocity m p inv_c PosZ]
+               (m, v) :: nvs
             ) markers |> Seq.concat
 
   // verify that pressures look sane.
   let check_pressures markers =
     for m in markers do
-      let c = Grid.raw_get m
-      let p = c.pressure |> Option.get |> (fun x -> x / LanguagePrimitives.FloatWithMeasure 1.0)
+      let p = m |> get_pressure |> ((/) (LanguagePrimitives.FloatWithMeasure 1.0))
       if Double.IsNaN p then
         failwith "Invalid pressure."
       if Double.IsNegativeInfinity p then
         failwith "Pressure is negative infinity."
       if Double.IsPositiveInfinity p then
         failwith "Pressure is positive infinity."
-      if p < 0.0 then
-        failwith "Pressure is negative."
 
   // verify that for each marker, ∇⋅u = 0.
   let check_divergence markers =
