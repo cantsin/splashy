@@ -63,6 +63,8 @@ module Simulator =
     printfn "* Verifying pressures."
     Pressure.check_pressures markers
     // sanity check, part 3.
+    printfn "* Verifying divergence (2)."
+    Pressure.check_divergence markers
     printfn "Cleaning up fluid velocities."
     Build.cleanup (fun () ->
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
@@ -70,8 +72,6 @@ module Simulator =
       printfn "  Cleanup: Setting solid cell velocities to zero."
       Build.zero_solid_velocities() |> Grid.update_velocities
     )
-    printfn "* Verifying divergence (2)."
-    Pressure.check_divergence markers
     printfn "Moving fluid markers."
     move_markers dt
     // sanity check, part 3.

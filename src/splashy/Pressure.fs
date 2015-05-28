@@ -94,9 +94,8 @@ module Pressure =
     let n = where.get_neighbor dir
     let v = match Grid.get n with
               | Some c when c.is_not_solid() ->
-                let density = if c.media = Air then Constants.air_density else Constants.fluid_density
                 let pressure = c.pressure |> Option.get
-                let offset = (pressure - p) * (inv_c / density)
+                let offset = (pressure - p) * inv_c
                 let vel = match dir with
                             | PosX -> Vector3d<m/s>(offset, 0.0<_>, 0.0<_>)
                             | PosY -> Vector3d<m/s>(0.0<_>, offset, 0.0<_>)
@@ -109,14 +108,13 @@ module Pressure =
 
   // set the pressure such that the divergence throughout the fluid is zero.
   let apply markers dt =
-    let inv_c = dt / Constants.h
+    let inv_c = dt / (Constants.h * Constants.fluid_density)
     Seq.map (fun (m: Coord) ->
                // negative gradients
                let c = Grid.raw_get m
                let p = c.pressure |> Option.get
                let gradient = backwards_gradient m p
-               let density = Constants.fluid_density
-               let offset = gradient .* (inv_c / density)
+               let offset = gradient .* inv_c
                let v = c.velocity .- offset
                // positive gradients
                let nvs = [get_adjusted_velocity m p inv_c PosX;
