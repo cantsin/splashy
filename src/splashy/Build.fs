@@ -54,13 +54,19 @@ module Build =
 
   // move fluid cells into air cells if applicable.
   let sync_markers markers =
+    let air = Grid.filter (fun c -> c.media = Fluid)
+              |> Seq.fold (fun accum (marker: Coord) ->
+                             match List.exists ((=) marker) markers with
+                               | false -> (marker, Air) :: accum
+                               | _ -> accum
+                          ) []
     Seq.fold (fun accum (marker: Coord) ->
                 match Grid.get marker with
                   | Some c when c.is_not_solid () ->
                      (marker, Fluid) :: accum
                   | _ ->
                     accum
-             ) [] markers
+             ) air markers
 
   let set_fluid_layers markers =
     for marker in markers do
@@ -165,6 +171,6 @@ module Build =
     Seq.iter (fun (m: Coord) ->
                 for (_, neighbor) in m.neighbors () do
                   match Grid.get neighbor with
-                    | None -> failwith "Fluid marker does not have a neighbor."
+                    | None -> failwith (sprintf "Fluid marker %A does not have a neighbor." m)
                     | _ -> ()
              ) markers
