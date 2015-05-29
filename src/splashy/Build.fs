@@ -160,3 +160,11 @@ module Build =
                 if not (World.contains m) then
                   failwith (sprintf "Error: Fluid marker went outside bounds (example: %O)." m)
              ) markers
+
+  let check_surroundings markers =
+    Seq.iter (fun (m: Coord) ->
+                for (_, neighbor) in m.neighbors () do
+                  match Grid.get neighbor with
+                    | None -> failwith "Fluid marker does not have a neighbor."
+                    | _ -> ()
+             ) markers
