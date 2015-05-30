@@ -28,7 +28,15 @@ module Simulator =
                             let c = Grid.raw_get m
                             l .+ (c.velocity .* dt)
                           ) locations |> Seq.toList
+    let moved = Seq.fold (fun accum (m: Coord, l: Vector3d<m>) ->
+                            let c = Coord.construct(l.x, l.y, l.z)
+                            if m <> c then
+                              (m, c) :: accum
+                            else
+                              accum
+                         ) [] (Seq.zip markers locations)
     markers <- Seq.map (fun (l: Vector3d<m>) -> Coord.construct(l.x, l.y, l.z)) locations |> Seq.toList
+    moved
 
   let advance dt =
     let dt = 0.0066
@@ -38,8 +46,6 @@ module Simulator =
     Build.setup (fun () ->
       printfn "  Setup: Adding possible new fluid markers."
       Build.add_new_markers markers |> Grid.add_cells
-      printfn "  Setup: Synchronizing fluid markers."
-      Build.sync_markers markers |> Grid.update_media
       printfn "  Setup: Setting fluid layers."
       Build.set_fluid_layers markers
       printfn "  Setup: Creating air buffer."
@@ -50,9 +56,6 @@ module Simulator =
     // sanity check, part 1.
     printfn "* Verifying marker surroundings."
     Build.check_surroundings markers
-    // sanity check, part 2.
-    printfn "* Verifying divergence (1)."
-    Pressure.check_divergence markers
     printfn "Applying convection term -(∇⋅u)u."
     Convection.apply markers dt |> Grid.update_velocities
     printfn "Applying external forces term F."
@@ -62,10 +65,10 @@ module Simulator =
     printfn "Applying pressure term -1/ρ∇p."
     Pressure.calculate markers dt |> Grid.update_pressures
     Pressure.apply markers dt |> Grid.update_velocities
-    // sanity check, part 3.
+    // sanity check, part 2.
     printfn "* Verifying pressures."
     Pressure.check_pressures markers
-    // sanity check, part 4.
+    // sanity check, part 3.
     printfn "* Verifying divergence (2)."
     Pressure.check_divergence markers
     printfn "Cleaning up fluid velocities."
@@ -76,8 +79,8 @@ module Simulator =
       Build.zero_solid_velocities() |> Grid.update_velocities
     )
     printfn "Moving fluid markers."
-    move_markers dt
-    // sanity check, part 5.
+    move_markers dt |> Grid.move_cells
+    // sanity check, part 4.
     printfn "* Verifying containment."
     Build.check_containment markers
 

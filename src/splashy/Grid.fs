@@ -38,11 +38,12 @@ module Grid =
 
   let delete_cells (cells: seq<Coord>) = Seq.iter delete cells
 
-  let update_media (mediums: seq<Coord * Media>) =
-    Seq.iter (fun (where, new_m) ->
-                let c = raw_get where
-                set where { c with media = new_m }
-             ) mediums
+  let move_cells (changes: seq<Coord * Coord>) =
+    for (old_coord, new_coord) in changes do
+      let c = raw_get old_coord
+      delete new_coord
+      add (new_coord, c)
+      delete old_coord
 
   let update_velocities (velocities: seq<Coord * Vector3d<m/s>>) =
     Seq.iter (fun (where, new_v) ->
