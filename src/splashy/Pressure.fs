@@ -14,8 +14,7 @@ module Pressure =
   let divergence (where: Coord) =
     let cell = Grid.raw_get where
     let is_nonsolid (_, n) = let c = Grid.raw_get n in c.is_not_solid ()
-    let backward = where.backward_neighbors ()
-    let outgoing = Seq.filter is_nonsolid backward
+    let outgoing = where.backward_neighbors ()
                    |> Seq.fold (fun accum (dir, _) ->
                                   let v = Coord.border dir cell.velocity
                                   accum .+ v
@@ -45,13 +44,13 @@ module Pressure =
       // return a 1 for every bordering liquid marker.
       let singulars = Seq.fold (fun accum (_, n) ->
                                   if lookups.ContainsKey n then
-                                    (lookups.[n], 1.0) :: accum
+                                    (lookups.[n], -1.0) :: accum
                                   else
                                     accum
                                 ) [] neighbors
-      // return -N for this marker, where N is number of non solid neighbors.
+      // return N for this marker, where N is number of non solid neighbors.
       let N = number_neighbors Cell.media_is_not_solid coord
-      (lookups.[coord], - N) :: singulars
+      (lookups.[coord], N) :: singulars
     // construct a sparse matrix of coefficients.
     let mutable m = SparseMatrix.zero<float> n n
     for KeyValue(marker, c) in lookups do
@@ -63,9 +62,7 @@ module Pressure =
     let c = (Constants.h * Constants.fluid_density) / dt
     let b = Seq.map (fun m ->
                        let f = divergence m
-                       let a = number_neighbors (fun c -> c.media = Air) m
-                       let s = Constants.atmospheric_pressure
-                       let result: float<kg/(m*s^2)> = c * f - (s * a) // ensure we have units of pressure.
+                       let result: float<kg/(m*s^2)> = c * f // ensure we have units of pressure.
                        float result // remove pressure units (matrix solver does not support units).
                      ) markers
                      |> Seq.toList
@@ -75,19 +72,27 @@ module Pressure =
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units
 
-  let get_pressure (where: Coord) =
+  // calculate solid wall pressure (which is not uniform!)
+  let get_solid_pressure (where: Coord) (origin: Coord) p (inv_c: float<(m^2*s)/kg>) d =
+    let vsolid = (Grid.raw_get where).velocity
+    let vborder = (Grid.raw_get origin).velocity
+    let (diff: float<m/s>) = (Coord.border_value d vborder) - (Coord.border_value d vsolid)
+    let (result: float<kg/(m*s^2)>) = p + (diff / inv_c)
+    result
+
+  let get_pressure (origin: Coord) p inv_c d (where: Coord) =
     match Grid.get where with
       | Some c when c.is_solid () ->
-        0.0<kg/(m*s^2)>
-      | Some c ->
+        get_solid_pressure where origin p inv_c d
+      | Some c when c.media = Fluid ->
         Option.get c.pressure
-      | None ->
-        Constants.atmospheric_pressure
+      | _ ->
+        0.0<kg/(m*s^2)>
 
-  let backwards_gradient (where: Coord) p =
-    let p1 = where.get_neighbor NegX |> get_pressure
-    let p2 = where.get_neighbor NegY |> get_pressure
-    let p3 = where.get_neighbor NegZ |> get_pressure
+  let backwards_gradient (where: Coord) p inv_c =
+    let p1 = where.get_neighbor NegX |> get_pressure where p inv_c NegX
+    let p2 = where.get_neighbor NegY |> get_pressure where p inv_c NegY
+    let p3 = where.get_neighbor NegZ |> get_pressure where p inv_c NegZ
     Vector3d<kg/(m*s^2)>(p - p1, p - p2, p - p3)
 
   let get_adjusted_velocity (where: Coord) p inv_c dir =
@@ -113,7 +118,7 @@ module Pressure =
                // negative gradients
                let c = Grid.raw_get m
                let p = c.pressure |> Option.get
-               let gradient = backwards_gradient m p
+               let gradient = backwards_gradient m p inv_c
                let offset = gradient .* inv_c
                let v = c.velocity .- offset
                // positive gradients
@@ -126,7 +131,7 @@ module Pressure =
   // verify that pressures look sane.
   let check_pressures markers =
     for m in markers do
-      let p = m |> get_pressure |> ((/) (LanguagePrimitives.FloatWithMeasure 1.0))
+      let p = (Grid.raw_get m).pressure |> Option.get |> ((/) (LanguagePrimitives.FloatWithMeasure 1.0))
       if Double.IsNaN p then
         failwith "Invalid pressure."
       if Double.IsNegativeInfinity p then
