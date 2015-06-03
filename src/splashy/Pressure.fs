@@ -14,12 +14,8 @@ module Pressure =
   let divergence (where: Coord) =
     let cell = Grid.raw_get where
     let is_nonsolid (_, n) = let c = Grid.raw_get n in c.is_not_solid ()
-    let outgoing = where.backward_neighbors ()
-                   |> Seq.fold (fun accum (dir, _) ->
-                                  let v = Coord.border dir cell.velocity
-                                  accum .+ v
-                               ) Vector3d.ZERO
-    let incoming = where.forward_neighbors ()
+    let outgoing = cell.velocity
+    let incoming = where.backward_neighbors ()
                    |> Seq.filter is_nonsolid
                    |> Seq.fold (fun accum (dir, n) ->
                                   let c = Grid.raw_get n
@@ -87,14 +83,15 @@ module Pressure =
       | Some c when c.media = Fluid ->
         Option.get c.pressure
       | _ ->
-        0.0<kg/(m*s^2)>
+        Constants.atmospheric_pressure
 
-  let backwards_gradient (where: Coord) p inv_c =
-    let p1 = where.get_neighbor NegX |> get_pressure where p inv_c NegX
-    let p2 = where.get_neighbor NegY |> get_pressure where p inv_c NegY
-    let p3 = where.get_neighbor NegZ |> get_pressure where p inv_c NegZ
+  let forwards_gradient (where: Coord) p inv_c =
+    let p1 = where.get_neighbor PosX |> get_pressure where p inv_c PosX
+    let p2 = where.get_neighbor PosY |> get_pressure where p inv_c PosY
+    let p3 = where.get_neighbor PosZ |> get_pressure where p inv_c PosZ
     Vector3d<kg/(m*s^2)>(p1 - p, p2 - p, p3 - p)
 
+  // TODO: add support for solids
   let get_adjusted_velocity (where: Coord) p inv_c dir =
     let n = where.get_neighbor dir
     let v = match Grid.get n with
@@ -102,9 +99,9 @@ module Pressure =
                 let pressure = c.pressure |> Option.get
                 let offset = (p - pressure) * inv_c
                 let vel = match dir with
-                            | PosX -> Vector3d<m/s>(offset, 0.0<_>, 0.0<_>)
-                            | PosY -> Vector3d<m/s>(0.0<_>, offset, 0.0<_>)
-                            | PosZ -> Vector3d<m/s>(0.0<_>, 0.0<_>, offset)
+                            | NegX -> Vector3d<m/s>(offset, 0.0<_>, 0.0<_>)
+                            | NegY -> Vector3d<m/s>(0.0<_>, offset, 0.0<_>)
+                            | NegZ -> Vector3d<m/s>(0.0<_>, 0.0<_>, offset)
                             | _ -> failwith "Invalid direction."
                 c.velocity .- vel
               | _ ->
@@ -118,13 +115,13 @@ module Pressure =
                // negative gradients
                let c = Grid.raw_get m
                let p = c.pressure |> Option.get
-               let gradient = backwards_gradient m p inv_c
+               let gradient = forwards_gradient m p inv_c
                let offset = gradient .* inv_c
                let v = c.velocity .- offset
                // positive gradients
-               let nvs = [get_adjusted_velocity m p inv_c PosX;
-                          get_adjusted_velocity m p inv_c PosY;
-                          get_adjusted_velocity m p inv_c PosZ]
+               let nvs = [get_adjusted_velocity m p inv_c NegX;
+                          get_adjusted_velocity m p inv_c NegY;
+                          get_adjusted_velocity m p inv_c NegZ]
                (m, v) :: nvs
             ) markers |> Seq.concat
 

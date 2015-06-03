@@ -11,7 +11,7 @@ module Cell =
   type Cell =
     {
       media: Media;
-      velocity: Vector3d<m/s>; // from the minimal faces (facing the negative axes).
+      velocity: Vector3d<m/s>; // from the minimal faces (facing the positive axes).
       pressure: Option<float<kg/(m*s^2)>>;
     }
 

@@ -16,7 +16,8 @@ module Constants =
   [<Literal>]
   let air_density = 1.2041<kg/m^3>
   [<Literal>]
-  let atmospheric_pressure = 101325.0<kg/(m*s^2)>
+  //let atmospheric_pressure = 101325.0<kg/(m*s^2)>
+  let atmospheric_pressure = 0.0<kg/(m*s^2)>
   [<Literal>]
   let max_velocity = 2.5<m/s>
   [<Literal>]
