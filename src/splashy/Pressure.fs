@@ -19,10 +19,10 @@ module Pressure =
                                   let v = Coord.border dir cell.velocity
                                   accum .+ v
                                ) Vector3d.ZERO
-    let forward = where.forward_neighbors ()
-    let incoming = Seq.filter is_nonsolid forward
+    let incoming = where.forward_neighbors ()
+                   |> Seq.filter is_nonsolid
                    |> Seq.fold (fun accum (dir, n) ->
-                                  let c = raw_get n
+                                  let c = Grid.raw_get n
                                   let v = Coord.border dir c.velocity
                                   accum .+ v
                                ) Vector3d.ZERO
@@ -93,14 +93,14 @@ module Pressure =
     let p1 = where.get_neighbor NegX |> get_pressure where p inv_c NegX
     let p2 = where.get_neighbor NegY |> get_pressure where p inv_c NegY
     let p3 = where.get_neighbor NegZ |> get_pressure where p inv_c NegZ
-    Vector3d<kg/(m*s^2)>(p - p1, p - p2, p - p3)
+    Vector3d<kg/(m*s^2)>(p1 - p, p2 - p, p3 - p)
 
   let get_adjusted_velocity (where: Coord) p inv_c dir =
     let n = where.get_neighbor dir
     let v = match Grid.get n with
               | Some c when c.is_not_solid() ->
                 let pressure = c.pressure |> Option.get
-                let offset = (pressure - p) * inv_c
+                let offset = (p - pressure) * inv_c
                 let vel = match dir with
                             | PosX -> Vector3d<m/s>(offset, 0.0<_>, 0.0<_>)
                             | PosY -> Vector3d<m/s>(0.0<_>, offset, 0.0<_>)
