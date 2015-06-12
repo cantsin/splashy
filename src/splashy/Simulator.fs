@@ -1,4 +1,4 @@
-namespace splashy
+namespace Splashy
 
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System
@@ -39,10 +39,13 @@ module Simulator =
     moved
 
   let advance dt =
-    let dt = 0.0066
+    let dt = 0.166
     let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
     printfn "Moving simulation forward with time step %A." dt
+    printf "Markers: "
+    Seq.iter (printfn "%A") markers
+    printfn ""
     Build.setup (fun () ->
       printfn "  Setup: Adding possible new fluid markers."
       Build.add_new_markers markers |> Grid.add_cells
@@ -66,7 +69,7 @@ module Simulator =
     Pressure.calculate markers dt |> Grid.update_pressures
     Pressure.apply markers dt |> Grid.update_velocities
     // sanity check, part 2.
-    printfn "* Verifying pressures."
+    printfn "\n* Verifying pressures."
     Pressure.check_pressures markers
     // sanity check, part 3.
     printfn "* Verifying divergence (2)."

@@ -1,4 +1,4 @@
-namespace splashy
+namespace Splashy
 
 open System.Collections.Generic
 
@@ -36,8 +36,14 @@ module Build =
   // reset grid layers.
   let setup fn =
     Layers.clear ()
+    let print_c (c: Coord) = printfn "%A (pressure %A) at %A %A %A" (Grid.raw_get c).media (Grid.raw_get c).pressure c.x c.y c.z
+    let before = Grid.filter (fun _ -> true) |> Seq.toList |> Set.ofList
     Grid.filter (fun _ -> true) |> Seq.iter (fun m -> Layers.set m None)
     fn ()
+    printfn "*** changed"
+    let after = Grid.filter (fun _ -> true) |> Seq.toList |> Set.ofList
+    (Set.difference after before) |> Seq.iter print_c
+    printfn "***"
 
   // add new water cells.
   let add_new_markers markers =

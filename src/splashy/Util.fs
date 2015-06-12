@@ -1,4 +1,4 @@
-namespace splashy
+namespace Splashy
 
 open System
 

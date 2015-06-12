@@ -1,4 +1,4 @@
-namespace splashy
+namespace Splashy
 
 open Microsoft.FSharp.Data.UnitSystems.SI.UnitSymbols
 open System.Collections.Generic

@@ -1,6 +1,6 @@
-module splashy.Tests
+module Splashy.Tests
 
-open splashy
+open Splashy
 open NUnit.Framework
 open FsCheck
 open FsCheck.NUnit
@@ -107,4 +107,4 @@ type pressure_fixture () =
     Check.QuickThrowOnFailure(
       fun (v: float<kg/(m*s^2)>) ->
         Grid.update_pressures [(coord, v)]
-        Pressure.gradient coord = Vector3d<kg/(m*s^2)>(v, v, v))
+        (not <| Util.is_valid_unit v) || Pressure.gradient coord = Vector3d<kg/(m*s^2)>(v, v, v))

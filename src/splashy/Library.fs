@@ -1,4 +1,4 @@
-namespace splashy
+namespace Splashy
 
 open System
 open System.Drawing
@@ -181,7 +181,7 @@ type Splashy() =
 module Library =
   let splashy = new Splashy()
   let version = GL.GetString(StringName.Version)
-  let N = 10
+  let N = 2
   printfn "GL version: %A" version
   printfn "Generating %d random markers" N
   Simulator.generate N
