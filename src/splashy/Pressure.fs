@@ -11,9 +11,10 @@ open Grid
 
 module Pressure =
 
+  let is_nonsolid (_, n) = let c = Grid.raw_get n in c.is_not_solid ()
+
   let divergence (where: Coord) =
     let cell = Grid.raw_get where
-    let is_nonsolid (_, n) = let c = Grid.raw_get n in c.is_not_solid ()
     let outgoing = where.forward_neighbors ()
                    |> Seq.filter is_nonsolid
                    |> Seq.fold (fun accum (dir, n) ->
@@ -138,9 +139,9 @@ module Pressure =
                printfn "forwards_gradient: %A" offset
                let v = c.velocity .- offset
                // negative gradients
-               let nvs = [get_adjusted_velocity m p inv_c NegX;
-                          get_adjusted_velocity m p inv_c NegY;
-                          get_adjusted_velocity m p inv_c NegZ]
+               let backward = m.backward_neighbors ()
+               let nonsolids = Seq.filter is_nonsolid backward
+               let nvs = Seq.map (fun (d, _) -> get_adjusted_velocity m p inv_c d) nonsolids |> Seq.toList
                (m, v) :: nvs
             ) markers |> Seq.concat
 
