@@ -29,7 +29,6 @@ module Pressure =
                                   accum .+ v
                                ) Vector3d.ZERO
     let result = incoming .- outgoing
-    printfn "divergence: %A" result
     result.x + result.y + result.z
 
   let number_neighbors fn (where: Coord) =
@@ -59,23 +58,18 @@ module Pressure =
     for KeyValue(marker, c) in lookups do
       for (r, value) in coefficients marker do
         m.[r, c] <- value
-    printfn "%O" m
     if not (m.IsSymmetric ()) then
       failwith "Coefficient matrix is not symmetric."
     // calculate divergences of the velocity field.
     let c = (Constants.h * Constants.fluid_density) / dt
     let b = Seq.map (fun m ->
-                       printfn "velocity: %A" ((Grid.raw_get m).velocity)
                        let f = divergence m
                        let result: float<kg/(m*s^2)> = c * f // ensure we have units of pressure.
-                       printfn "%A %A" c f
                        float result // remove pressure units (matrix solver does not support units).
                      ) markers
                      |> Seq.toList
                      |> vector
-    printfn "%O" b
     let pressures = m.Solve(b)
-    printfn "%O" pressures
     // add the pressure units back.
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
     Seq.zip markers pressure_units
@@ -83,8 +77,6 @@ module Pressure =
   // calculate solid wall pressure (which is not uniform!)
   let get_solid_pressure solid_cell (origin: Coord) p (inv_c: float<(m^2*s)/kg>) d =
     if solid_cell.media = Solid then
-      printfn "SOLID: direction is %A" d
-    else
       failwith "not a solid!"
     let vsolid = solid_cell.velocity
     let vborder = (Grid.raw_get origin).velocity
@@ -93,7 +85,6 @@ module Pressure =
         | NegX | NegY | NegZ -> (Coord.border_value d vborder) - (Coord.border_value d vsolid)
         | PosX | PosY | PosZ -> (Coord.border_value d vsolid) - (Coord.border_value d vborder)
     let (result: float<kg/(m*s^2)>) = p + (diff / inv_c)
-    printfn "Got solid pressure: %A" result
     result
 
   let get_pressure (origin: Coord) p inv_c d (where: Coord) =
@@ -109,7 +100,6 @@ module Pressure =
     let p1 = where.get_neighbor PosX |> get_pressure where p inv_c PosX
     let p2 = where.get_neighbor PosY |> get_pressure where p inv_c PosY
     let p3 = where.get_neighbor PosZ |> get_pressure where p inv_c PosZ
-    printfn "%A %A %A" (p1 - p) (p2 - p) (p3 - p)
     Vector3d<kg/(m*s^2)>(p1 - p, p2 - p, p3 - p)
 
   let get_adjusted_velocity (where: Coord) p inv_c dir =
@@ -117,7 +107,6 @@ module Pressure =
     let c = Grid.raw_get n
     let pressure = get_pressure where p inv_c dir n
     let offset = (p - pressure) * inv_c
-    printfn "backward_gradient: %A (%A)" offset dir
     let vel = match dir with
                 | NegX -> Vector3d<m/s>(offset, 0.0<_>, 0.0<_>)
                 | NegY -> Vector3d<m/s>(0.0<_>, offset, 0.0<_>)
@@ -130,13 +119,11 @@ module Pressure =
   let apply markers dt =
     let inv_c = dt / (Constants.h * Constants.fluid_density)
     Seq.map (fun (m: Coord) ->
-               printfn "\n* Applying pressure to marker %A %A %A" m.x m.y m.z
                // positive gradients
                let c = Grid.raw_get m
                let p = c.pressure |> Option.get
                let gradient = forwards_gradient m p inv_c
                let offset = gradient .* inv_c
-               printfn "forwards_gradient: %A" offset
                let v = c.velocity .- offset
                // negative gradients
                let backward = m.backward_neighbors ()
@@ -158,9 +145,6 @@ module Pressure =
 
   // verify that for each marker, ∇⋅u = 0.
   let check_divergence markers =
-    for m in markers do
-      let f = divergence m
-      printfn "divergence was %A" f
     for m in markers do
       let f = divergence m
       if f > 0.0001<m/s> || f < -0.0001<m/s> then
