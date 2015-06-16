@@ -1,8 +1,0 @@
-* sources and sinks [0/2]
-** TODO implement source
-** TODO implement sparse matrix solver
-* graphics [0/2]
-** TODO implement camera
-** TODO proper transparency – sorting back-to-front?
-* bugs [0/1]
-** TODO water adjacency
