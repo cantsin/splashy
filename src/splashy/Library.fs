@@ -32,9 +32,9 @@ type Splashy() =
   let mutable model_view_location = 0
   let mutable vertex_location = 0 // allow VAOs to set their own matrix transform.
 
-  let mutable time = 0.0f
-  let mutable pressed = false // don't rush through the simulation.
+  let mutable keyPressed = false // don't rush through the simulation.
 
+  let mutable rotation = Matrix4.Identity
   let eye = Vector3(0.0f, 0.0f, -400.0f)
 
   // drawables.
@@ -134,11 +134,11 @@ type Splashy() =
     match e.Key with
       | Key.Escape -> base.Close()
       | Key.Right ->
-        if not pressed then
+        if not keyPressed then
           try
             Simulator.advance 0.016671 // 30fps.
             refresh_drawables ()
-            pressed <- true
+            keyPressed <- true
           with
             | exn ->
               printfn "Exception! %A" exn.Message
@@ -147,16 +147,18 @@ type Splashy() =
 
   override o.OnKeyUp e =
     match e.Key with
-      | Key.Right -> pressed <- false
+      | Key.Right -> keyPressed <- false
       | _ -> ()
 
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    time <- time + (float32)e.Time
-    let rot = Matrix4.CreateRotationY(time)
-    let mutable lookat = rot * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
-    GL.UniformMatrix4(model_view_location, false, &lookat)
+    if base.Mouse.[MouseButton.Left] then
+      let angle = (float32 base.Mouse.X / float32 base.Width) - 0.5f
+      let squared = if angle >= 0.0f then angle * angle else - (angle * angle)
+      rotation <- rotation * Matrix4.CreateRotationY(squared)
+      let mutable lookat = rotation * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
+      GL.UniformMatrix4(model_view_location, false, &lookat)
 
     try
       Simulator.advance e.Time
