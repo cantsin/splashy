@@ -26,7 +26,13 @@ module Simulator =
     locations <- Seq.map (fun (l: Vector3d<m>) ->
                             let m = Coord.construct(l.x, l.y, l.z)
                             let c = Grid.raw_get m
-                            l .+ (c.velocity .* dt)
+                            let v = m.backward_neighbors ()
+                                    |> Seq.fold (fun accum (d, n) ->
+                                                   let nc = Grid.raw_get n
+                                                   let nv = Coord.border d nc.velocity
+                                                   accum .+ nv
+                                                 ) Vector3d.ZERO
+                            l .+ ((v .+ c.velocity) .* dt)
                           ) locations |> Seq.toList
     let moved = Seq.fold (fun accum (m: Coord, l: Vector3d<m>) ->
                             let c = Coord.construct(l.x, l.y, l.z)

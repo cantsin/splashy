@@ -21,7 +21,8 @@ module Grid =
 
   let filter (fn: Cell -> bool) =
     // make a copy: we want to avoid writing to the dictionary while potentially iterating over it.
-    Seq.filter (fun (KeyValue(k, v)) -> fn v) grid
+    grid
+    |> Seq.filter (fun (KeyValue(k, v)) -> fn v)
     |> Seq.map (fun (KeyValue(k, v)) -> k)
     |> fun keys -> new List<Coord> (keys)
 
