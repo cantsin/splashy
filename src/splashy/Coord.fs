@@ -13,8 +13,12 @@ module Coord =
 
   [<CustomEquality>]
   [<CustomComparison>]
+  [<StructuredFormatDisplay("{AsString}")>]
   type Coord =
     { x: int<m>; y: int<m>; z: int<m>; }
+
+    override this.ToString () = sprintf "Coord[%A; %A; %A]" this.x this.y this.z
+    member this.AsString = this.ToString()
 
     override this.GetHashCode () =
       541 * int this.x + 79 * int this.y + 31 * int this.z
@@ -92,8 +96,6 @@ module Coord =
         | PosY -> { this with y = this.y + h }
         | NegZ -> { this with z = this.z - h }
         | PosZ -> { this with z = this.z + h }
-
-    override this.ToString () = sprintf "Coord[%A; %A; %A]" this.x this.y this.z
 
   let reverse d =
     match d with
