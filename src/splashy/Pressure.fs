@@ -62,13 +62,14 @@ module Pressure =
       failwith "Coefficient matrix is not symmetric."
     // calculate divergences of the velocity field.
     let c = (Constants.h * Constants.fluid_density) / dt
-    let b = Seq.map (fun m ->
-                       let f = divergence m
-                       let result: float<kg/(m*s^2)> = c * f // ensure we have units of pressure.
-                       float result // remove pressure units (matrix solver does not support units).
-                     ) markers
-                     |> Seq.toList
-                     |> vector
+    let b = markers
+            |> Seq.map (fun m ->
+                          let f = divergence m
+                          let result: float<kg/(m*s^2)> = c * f // ensure we have units of pressure.
+                          float result // remove pressure units (matrix solver does not support units).
+                       )
+            |> Seq.toList
+            |> vector
     let pressures = m.Solve(b)
     // add the pressure units back.
     let pressure_units = Seq.map (fun p -> p * 1.0<kg/(m*s^2)>) pressures
@@ -102,8 +103,7 @@ module Pressure =
     let p3 = where.get_neighbor PosZ |> get_pressure where p inv_c PosZ
     Vector3d<kg/(m*s^2)>(p1 - p, p2 - p, p3 - p)
 
-  let get_adjusted_velocity (where: Coord) p inv_c dir =
-    let n = where.get_neighbor dir
+  let get_adjusted_velocity (where: Coord) (n: Coord) p inv_c dir =
     let c = Grid.raw_get n
     let pressure = get_pressure where p inv_c dir n
     let offset = (p - pressure) * inv_c
@@ -128,7 +128,7 @@ module Pressure =
                // negative gradients
                let backward = m.backward_neighbors ()
                let nonsolids = Seq.filter is_nonsolid backward
-               let nvs = Seq.map (fun (d, _) -> get_adjusted_velocity m p inv_c d) nonsolids |> Seq.toList
+               let nvs = Seq.map (fun (d, n) -> get_adjusted_velocity m n p inv_c d) nonsolids |> Seq.toList
                (m, v) :: nvs
             ) markers |> Seq.concat
 

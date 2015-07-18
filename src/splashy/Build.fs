@@ -114,16 +114,23 @@ module Build =
         let previous_layer = Seq.filter get_previous_layer neighbors
         let n = Seq.length previous_layer
         if n <> 0 then
+          let avg = Seq.map (fun (_, where) -> (Grid.raw_get where).velocity) previous_layer |> Vector.average
           let c = Grid.raw_get m
-          for dir, neighbor in neighbors do
-            match Grid.get neighbor with
-              | Some n when n.media <> Fluid && Coord.is_bordering dir c.velocity ->
-                let velocities = Seq.map (fun (_, where) -> (Grid.raw_get where).velocity) previous_layer
-                let pla = Vector.average velocities
-                let new_v = Coord.merge dir c.velocity pla
-                result <- (m, new_v) :: result
-              | _ -> ()
-          Layers.set m (Some (i - 1))
+          let directions = [(if c.velocity.x < 0.0<_> then NegX else PosX);
+                            (if c.velocity.y < 0.0<_> then NegY else PosY);
+                            (if c.velocity.z < 0.0<_> then NegZ else PosZ)]
+          let new_vs = List.map (fun dir ->
+                                   let neighbor = m.get_neighbor dir
+                                   Coord.border_value dir <|
+                                   match Grid.get neighbor with
+                                   | Some n when n.media <> Fluid ->
+                                     Coord.merge dir c.velocity avg
+                                   | _ ->
+                                     c.velocity
+                                ) directions
+          let new_v = Vector3d(new_vs.[0], new_vs.[1], new_vs.[2])
+          result <- (m, new_v) :: result
+          Layers.set m (Some i)
     result
 
   // zero out any velocities that go into solid cells.
