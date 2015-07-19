@@ -110,12 +110,17 @@ module Build =
           | Some c when Layers.has_value neighbor (Some (i - 1)) -> true
           | _ -> false
       for m in nonfluid do
-        let neighbors = m.neighbors ()
-        let previous_layer = Seq.filter get_previous_layer neighbors
-        let n = Seq.length previous_layer
+        let forward = m.forward_neighbors () |> Seq.filter get_previous_layer
+        let backward = m.backward_neighbors () |> Seq.filter get_previous_layer
+        let n = Seq.length forward + Seq.length backward
         if n <> 0 then
-          let avg = Seq.map (fun (_, where) -> (Grid.raw_get where).velocity) previous_layer |> Vector.average
           let c = Grid.raw_get m
+          let f = Seq.fold (fun accum (d, _) -> accum .+ Coord.border d c.velocity) Vector3d.ZERO forward
+          let n = Seq.fold (fun accum (d, where) ->
+                              let v = (Grid.raw_get where).velocity
+                              accum .+ Coord.border d v
+                           ) Vector3d.ZERO backward
+          let avg = f .+ n
           let directions = [(if c.velocity.x < 0.0<_> then NegX else PosX);
                             (if c.velocity.y < 0.0<_> then NegY else PosY);
                             (if c.velocity.z < 0.0<_> then NegZ else PosZ)]
@@ -130,7 +135,7 @@ module Build =
                                 ) directions
           let new_v = Vector3d(new_vs.[0], new_vs.[1], new_vs.[2])
           result <- (m, new_v) :: result
-          Layers.set m (Some i)
+          Layers.set m (Some (i - 1))
     result
 
   // zero out any velocities that go into solid cells.
