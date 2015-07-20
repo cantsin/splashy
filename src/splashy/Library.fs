@@ -15,6 +15,7 @@ open Aabb
 open Drawables
 open Grid
 open Simulator
+open Camera
 
 type Splashy() =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
@@ -34,8 +35,7 @@ type Splashy() =
 
   let mutable keyPressed = false // don't rush through the simulation.
 
-  let mutable rotation = Matrix4.Identity
-  let eye = Vector3(0.0f, 0.0f, -400.0f)
+  let camera = new Camera ()
 
   // drawables.
   let world_bounds = new AreaBounds () // fixed, does not change.
@@ -68,6 +68,8 @@ type Splashy() =
     drawables <- cells @ [(world_bounds :> IDrawable)]
 
   override o.OnLoad e =
+
+    camera.initialize ()
 
     vertex_shader <-
       let shader = GL.CreateShader(ShaderType.VertexShader)
@@ -126,13 +128,17 @@ type Splashy() =
                                                                   float32 base.Width / float32 base.Height,
                                                                   1.0f,
                                                                   640.0f)
-    let mutable lookat = Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
     GL.UniformMatrix4(projection_location, false, &projection)
-    GL.UniformMatrix4(model_view_location, false, &lookat)
+    let mutable m = camera.matrix ()
+    GL.UniformMatrix4(model_view_location, false, &m)
 
   override o.OnKeyDown e =
     match e.Key with
       | Key.Escape -> base.Close()
+      | Key.W -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
+      | Key.A -> camera.move (Vector3(-1.0f, 0.0f, 0.0f))
+      | Key.S -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
+      | Key.D -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
       | Key.Right ->
         if not keyPressed then
           try
@@ -153,20 +159,20 @@ type Splashy() =
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    if base.Mouse.[MouseButton.Left] then
-      let angle = (float32 base.Mouse.X / float32 base.Width) - 0.5f
-      let squared = if angle >= 0.0f then angle * angle else - (angle * angle)
-      rotation <- rotation * Matrix4.CreateRotationY(squared)
-      let mutable lookat = rotation * Matrix4.LookAt(eye, Vector3.Zero, Vector3.UnitY)
-      GL.UniformMatrix4(model_view_location, false, &lookat)
+    // if base.Mouse.[MouseButton.Left] then
+    //   let angle = (float32 base.Mouse.X / float32 base.Width) - 0.5f
+    //   let squared = if angle >= 0.0f then angle * angle else - (angle * angle)
+    //   let mutable m = camera.rotate squared
+    let mutable m = camera.matrix ()
+    GL.UniformMatrix4(model_view_location, false, &m)
 
-    try
-      Simulator.advance e.Time
-      refresh_drawables ()
-    with
-      | exn ->
-        printfn "Exception! %A" exn.Message
-        base.Close()
+    // try
+    //   Simulator.advance e.Time
+    //   refresh_drawables ()
+    // with
+    //   | exn ->
+    //     printfn "Exception! %A" exn.Message
+    //     base.Close()
 
     for drawable in drawables do
       drawable.render vertex_location
