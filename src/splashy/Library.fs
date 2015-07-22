@@ -36,6 +36,7 @@ type Splashy() =
   let mutable keyPressed = false // don't rush through the simulation.
 
   let camera = new Camera ()
+  let mutable mouseReady = false
 
   // drawables.
   let world_bounds = new AreaBounds () // fixed, does not change.
@@ -68,6 +69,8 @@ type Splashy() =
     drawables <- cells @ [(world_bounds :> IDrawable)]
 
   override o.OnLoad e =
+
+    o.Cursor <- MouseCursor.Empty
 
     camera.initialize ()
 
@@ -135,10 +138,10 @@ type Splashy() =
   override o.OnKeyDown e =
     match e.Key with
       | Key.Escape -> base.Close()
-      | Key.W -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
-      | Key.A -> camera.move (Vector3(-1.0f, 0.0f, 0.0f))
-      | Key.S -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
-      | Key.D -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
+      | Key.W -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
+      | Key.A -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
+      | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
+      | Key.D -> camera.move (Vector3(-1.0f, 0.0f, 0.0f))
       | Key.Right ->
         if not keyPressed then
           try
@@ -156,13 +159,26 @@ type Splashy() =
       | Key.Right -> keyPressed <- false
       | _ -> ()
 
+  override o.OnMouseMove e =
+    // hack to ignore first mouse event.
+    let x = float base.Width / 2.0
+    let y = float base.Height / 2.0
+    OpenTK.Input.Mouse.SetPosition(x, y)
+    if not mouseReady then
+      mouseReady <- true
+    else
+      let currentX = OpenTK.Input.Mouse.GetState().X
+      let currentY = OpenTK.Input.Mouse.GetState().Y
+      let diffX = currentX - (int x)
+      let diffY = currentY - (int y)
+      if diffX <> 0 || diffY <> 0 then
+        let yaw = float32 diffX / (float32 base.Width / 2.0f)
+        let pitch = float32 diffY / (float32 base.Height / 2.0f)
+        camera.rotate yaw pitch
+
   override o.OnRenderFrame(e) =
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    // if base.Mouse.[MouseButton.Left] then
-    //   let angle = (float32 base.Mouse.X / float32 base.Width) - 0.5f
-    //   let squared = if angle >= 0.0f then angle * angle else - (angle * angle)
-    //   let mutable m = camera.rotate squared
     let mutable m = camera.matrix ()
     GL.UniformMatrix4(model_view_location, false, &m)
 

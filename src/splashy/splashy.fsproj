@@ -74,6 +74,7 @@
     <Compile Include="Constants.fs" />
     <Compile Include="Coord.fs" />
     <Compile Include="Aabb.fs" />
+    <Compile Include="Camera.fs" />
     <Compile Include="World.fs" />
     <Compile Include="Cell.fs" />
     <Compile Include="Grid.fs" />
