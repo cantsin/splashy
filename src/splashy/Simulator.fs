@@ -18,6 +18,9 @@ open Forces
 
 module Simulator =
 
+  let mutable iterations = 0
+  let number_iterations = 2
+
   let mutable private markers: Coord list = []         // closest coordinate locations.
   let mutable private locations: Vector3d<m> list = [] // real locations.
 
@@ -45,6 +48,11 @@ module Simulator =
     moved
 
   let advance dt =
+
+    iterations <- iterations + 1
+    if iterations > number_iterations then
+      failwith "Done."
+
     let dt = 0.166
     let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
