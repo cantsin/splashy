@@ -134,7 +134,8 @@ module Build =
                                      c.velocity
                                 ) directions
           let new_v = Vector3d(new_vs.[0], new_vs.[1], new_vs.[2])
-          result <- (m, new_v) :: result
+          if new_v <> c.velocity then
+            result <- (m, new_v) :: result
           Layers.set m (Some (i - 1))
     result
 
@@ -147,8 +148,8 @@ module Build =
         | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity -> true
         | _ -> false
     Seq.collect (fun (solid: Coord) ->
-                   let neighbors = solid.neighbors ()
-                   let filtered = Seq.filter has_inward_velocity neighbors
+                   let backward = solid.backward_neighbors ()
+                   let filtered = Seq.filter has_inward_velocity backward
                    Seq.map (fun (dir, neighbor) ->
                               let inward = Coord.reverse dir
                               let n = Grid.raw_get neighbor
