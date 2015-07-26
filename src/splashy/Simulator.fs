@@ -49,9 +49,9 @@ module Simulator =
 
   let advance dt =
 
-    iterations <- iterations + 1
-    if iterations > number_iterations then
-      failwith "Done."
+    // iterations <- iterations + 1
+    // if iterations > number_iterations then
+    //   failwith "Done."
 
     let dt = 0.166
     let dt = dt * 1.0<s> // * Constants.time_step

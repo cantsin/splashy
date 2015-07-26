@@ -17,13 +17,16 @@ open Grid
 open Simulator
 open Camera
 
-type Splashy() =
+type Splashy () =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
 
   do base.VSync <- VSyncMode.On
 
   let vertex_file = "src/splashy/shaders/simple.vert"
   let fragment_file = "src/splashy/shaders/simple.frag"
+
+  // configuration.
+  let continuous = true
 
   let mutable vertex_shader = 0
   let mutable fragment_shader = 0
@@ -143,7 +146,7 @@ type Splashy() =
       | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
       | Key.D -> camera.move (Vector3(-1.0f, 0.0f, 0.0f))
       | Key.Right ->
-        if not keyPressed then
+        if not keyPressed && not continuous then
           try
             Simulator.advance 0.016671 // 30fps.
             refresh_drawables ()
@@ -182,13 +185,14 @@ type Splashy() =
     let mutable m = camera.matrix ()
     GL.UniformMatrix4(model_view_location, false, &m)
 
-    // try
-    //   Simulator.advance e.Time
-    //   refresh_drawables ()
-    // with
-    //   | exn ->
-    //     printfn "Exception! %A" exn.Message
-    //     base.Close()
+    if continuous then
+      try
+        Simulator.advance e.Time
+        refresh_drawables ()
+      with
+        | exn ->
+          printfn "Exception! %A" exn.Message
+          base.Close()
 
     for drawable in drawables do
       drawable.render vertex_location
