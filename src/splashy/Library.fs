@@ -26,7 +26,7 @@ type Splashy () =
   let fragment_file = "src/splashy/shaders/simple.frag"
 
   // configuration.
-  let continuous = true
+  let continuous = false
 
   let mutable vertex_shader = 0
   let mutable fragment_shader = 0

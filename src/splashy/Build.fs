@@ -141,22 +141,22 @@ module Build =
 
   // zero out any velocities that go into solid cells.
   let zero_solid_velocities () =
-    let solids = Grid.filter Cell.media_is_solid
     let has_inward_velocity (dir, neighbor) =
       let inward = Coord.reverse dir
       match Grid.get neighbor with
         | Some n when n.is_not_solid () && Coord.is_bordering inward n.velocity -> true
         | _ -> false
-    Seq.collect (fun (solid: Coord) ->
-                   let backward = solid.backward_neighbors ()
-                   let filtered = Seq.filter has_inward_velocity backward
-                   Seq.map (fun (dir, neighbor) ->
-                              let inward = Coord.reverse dir
-                              let n = Grid.raw_get neighbor
-                              let new_v = Coord.merge inward n.velocity Vector3d.ZERO
-                              (neighbor, new_v)
-                           ) filtered
-                 ) solids
+    let new_velocities (dir, neighbor) =
+      let inward = Coord.reverse dir
+      let n = Grid.raw_get neighbor
+      let new_v = Coord.merge inward n.velocity Vector3d.ZERO
+      (neighbor, new_v)
+    Grid.filter Cell.media_is_solid
+    |> Seq.collect (fun (solid: Coord) ->
+                      solid.backward_neighbors ()
+                      |> Seq.filter has_inward_velocity
+                      |> Seq.map new_velocities
+                   )
 
   let check_containment markers =
     Seq.iter (fun (m: Coord) ->

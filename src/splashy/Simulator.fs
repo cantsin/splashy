@@ -94,6 +94,19 @@ module Simulator =
       Build.propagate_velocities () |> Grid.update_velocities
       printfn "  Cleanup: Setting solid cell velocities to zero."
       Build.zero_solid_velocities() |> Grid.update_velocities
+      // make sure solids are not moving (for now).
+      Grid.filter Cell.media_is_solid
+      |> Seq.collect (fun (solid: Coord) ->
+                        let result = solid.backward_neighbors ()
+                                     |> Seq.filter (fun (d, c) -> Grid.get c |> Option.isSome)
+                                     |> Seq.map (fun (d, c) ->
+                                                   let v = (Grid.raw_get c).velocity
+                                                   let new_v = Coord.merge d v Vector3d.ZERO
+                                                   (c, new_v)
+                                                ) |> Seq.toList
+                        (solid, Vector3d.ZERO) :: result
+                     )
+      |> Grid.update_velocities
     )
     printfn "Moving fluid markers."
     move_markers dt |> Grid.move_cells
