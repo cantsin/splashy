@@ -12,4 +12,8 @@ module Util =
   let filtermap fn seq =
     Seq.map fn seq
     |> Seq.toList
-    |> Seq.fold (fun accum elem -> match elem with | Some(item) -> item :: accum | None -> accum)
+    |> Seq.fold (fun accum elem ->
+                   match elem with
+                     | Some(item) -> item :: accum
+                     | None -> accum
+                )
