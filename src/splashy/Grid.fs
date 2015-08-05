@@ -64,12 +64,12 @@ module Grid =
                    |> Seq.filter (fun (_, where) -> grid.ContainsKey where)
                    |> Seq.map (fun (dir, where) ->
                                  let v = (raw_get where).velocity
-                                 let new_v = Coord.merge dir v Vector3d.ZERO
+                                 let new_v = Coord.merge dir Vector3d.ZERO v
                                  (where, new_v, dir)
                               )
                    |> Seq.toList
     let v = (raw_get coord).velocity
-    let forwards = [(coord, Coord.merge PosX v Vector3d.ZERO, PosX);
-                    (coord, Coord.merge PosY v Vector3d.ZERO, PosY);
-                    (coord, Coord.merge PosZ v Vector3d.ZERO, PosZ);]
+    let forwards = [(coord, v.unit_x, PosX);
+                    (coord, v.unit_y, PosY);
+                    (coord, v.unit_z, PosZ);]
     forwards @ backwards

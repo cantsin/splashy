@@ -31,6 +31,12 @@ module Vector =
 
       static member (./) (v: Vector3d<'u>, f: float<'v>) = Vector3d<_>(v.x / f, v.y / f, v.z / f)
 
+      static member dot (v1: Vector3d<'u>, v2: Vector3d<'u>) = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+
+      member this.unit_x = Vector3d<'u>(this.x, 0.0<_>, 0.0<_>)
+      member this.unit_y = Vector3d<'u>(0.0<_>, this.y, 0.0<_>)
+      member this.unit_z = Vector3d<'u>(0.0<_>, 0.0<_>, this.z)
+
       static member ZERO = Vector3d<'u>()
 
       override this.ToString () = sprintf "Vector3d[%A; %A; %A]" this.x this.y this.z
