@@ -94,6 +94,19 @@ type Splashy () =
       GL.LinkProgram(program)
       program
 
+    // testing
+    let _ =
+      printfn "%O" <| GL.GetString StringName.Extensions
+      let shader = GL.CreateShader(ShaderType.VertexShader)
+      GL.ShaderSource(shader, File.ReadAllText "src/splashy/shaders/normal.vert")
+      GL.CompileShader(shader)
+      let shader = GL.CreateShader(ShaderType.FragmentShader)
+      GL.ShaderSource(shader, File.ReadAllText "src/splashy/shaders/normal.frag")
+      GL.CompileShader(shader)
+      let shader = GL.CreateShader(ShaderType.GeometryShader)
+      GL.ShaderSource(shader, File.ReadAllText "src/splashy/shaders/normal.geom")
+      GL.CompileShader(shader)
+
     let mutable s = ""
     GL.GetProgramInfoLog(program, &s)
     if not (Seq.isEmpty s) then
