@@ -22,15 +22,12 @@ type Splashy () =
 
   do base.VSync <- VSyncMode.On
 
-  let vertex_file = "src/splashy/shaders/simple.vert"
-  let fragment_file = "src/splashy/shaders/simple.frag"
+  let mutable shaders = []
+  let mutable programs = []
+  let mutable current_program = 0
 
   // configuration.
   let continuous = false
-
-  let mutable vertex_shader = 0
-  let mutable fragment_shader = 0
-  let mutable program = 0
 
   let mutable projection_location = 0
   let mutable model_view_location = 0
@@ -64,12 +61,21 @@ type Splashy () =
     let fluid = get_drawables (fun c -> c.media = Fluid)
     let solids = get_drawables (fun c -> c.media = Solid)
 
+    (world_bounds :> IDrawable).prepare current_program
     // draw in a specific order for transparency reasons.
     cells <- fluid @ solids @ air
     for (cell: IDrawable) in cells do
-      cell.prepare program
+      cell.prepare current_program
 
     drawables <- cells @ [(world_bounds :> IDrawable)]
+
+  let compile_shader shadertype filename =
+    let shader = GL.CreateShader(shadertype)
+    let source = File.ReadAllText filename
+    GL.ShaderSource(shader, source)
+    GL.CompileShader(shader)
+    shaders <- shader :: shaders
+    shader
 
   override o.OnLoad e =
 
@@ -77,45 +83,41 @@ type Splashy () =
 
     camera.initialize ()
 
-    vertex_shader <-
-      let shader = GL.CreateShader(ShaderType.VertexShader)
-      GL.ShaderSource(shader, File.ReadAllText vertex_file)
-      GL.CompileShader(shader)
-      shader
-    fragment_shader <-
-      let shader = GL.CreateShader(ShaderType.FragmentShader)
-      GL.ShaderSource(shader, File.ReadAllText fragment_file)
-      GL.CompileShader(shader)
-      shader
-    program <-
+    let simple_program =
       let program = GL.CreateProgram()
+      let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/simple.vert"
+      let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/simple.frag"
       GL.AttachShader(program, vertex_shader)
       GL.AttachShader(program, fragment_shader)
       GL.LinkProgram(program)
       program
+    programs <- simple_program :: programs
 
-    // testing
-    let _ =
-      printfn "%O" <| GL.GetString StringName.Extensions
-      let shader = GL.CreateShader(ShaderType.VertexShader)
-      GL.ShaderSource(shader, File.ReadAllText "src/splashy/shaders/normal.vert")
-      GL.CompileShader(shader)
-      let shader = GL.CreateShader(ShaderType.FragmentShader)
-      GL.ShaderSource(shader, File.ReadAllText "src/splashy/shaders/normal.frag")
-      GL.CompileShader(shader)
-      let shader = GL.CreateShader(ShaderType.GeometryShader)
-      GL.ShaderSource(shader, File.ReadAllText "src/splashy/shaders/normal.geom")
-      GL.CompileShader(shader)
+    let normal_program =
+      let program = GL.CreateProgram()
+      let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/normal.vert"
+      let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/normal.frag"
+      let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/normal.geom"
+      GL.AttachShader(program, vertex_shader)
+      GL.AttachShader(program, fragment_shader)
+      GL.AttachShader(program, geometry_shader)
+      GL.LinkProgram(program)
+      program
+    programs <- normal_program :: programs
 
+    current_program <- simple_program
+
+    // check for errors.
     let mutable s = ""
-    GL.GetProgramInfoLog(program, &s)
+    GL.GetProgramInfoLog(current_program, &s)
     if not (Seq.isEmpty s) then
       failwith (sprintf "Shader compilation failed:\n%A" s)
-    GL.UseProgram(program)
 
-    projection_location <- GL.GetUniformLocation(program, "projectionMatrix")
-    model_view_location <- GL.GetUniformLocation(program, "modelViewMatrix")
-    vertex_location <- GL.GetUniformLocation(program, "vertex_mat")
+    GL.UseProgram(current_program)
+
+    projection_location <- GL.GetUniformLocation(current_program, "projectionMatrix")
+    model_view_location <- GL.GetUniformLocation(current_program, "modelViewMatrix")
+    vertex_location <- GL.GetUniformLocation(current_program, "vertex_mat")
 
     // set other GL states.
     GL.Enable(EnableCap.DepthTest)
@@ -124,15 +126,15 @@ type Splashy () =
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
     refresh_drawables ()
-    (world_bounds :> IDrawable).prepare program
 
     base.OnLoad e
 
   override o.OnUnload(e) =
     GL.UseProgram(0)
-    GL.DeleteProgram(program)
-    GL.DeleteShader(vertex_shader)
-    GL.DeleteShader(fragment_shader)
+    for program in programs do
+      GL.DeleteProgram(program)
+    for shader in shaders do
+      GL.DeleteShader(int32 shader)
     for drawable in drawables do
       drawable.destroy ()
     base.OnUnload e
