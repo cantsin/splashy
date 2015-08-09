@@ -12,7 +12,7 @@ in vec4 vertex_color;
 out vec3 normal;
 out vec4 color;
 
-void main(void)
+void main()
 {
     gl_Position = projectionMatrix * modelViewMatrix * vertex_mat * vertex_position;
     normal = (modelViewMatrix * vertex_normal).xyz;

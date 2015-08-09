@@ -1,18 +1,20 @@
-#version 330 core
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 normal;
+#version 130
 
-out VS_OUT {
-  vec3 normal;
-} vs_out;
+precision highp float;
 
-uniform mat4 projection;
-uniform mat4 view;
-uniform mat4 model;
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 vertex_mat;
+in vec4 vertex_position;
+in vec4 vertex_normal;
+in vec4 vertex_color;
+
+out vec3 normal;
+out vec4 color;
 
 void main()
 {
-  gl_Position = projection * view * model * vec4(position, 1.0f);
-  mat3 normalMatrix = mat3(transpose(inverse(view * model)));
-  vs_out.normal = normalize(vec3(projection * vec4(normalMatrix * normal, 1.0)));
+    gl_Position = projectionMatrix * modelViewMatrix * vertex_mat * vertex_position;
+    normal = (modelViewMatrix * vertex_normal).xyz;
+    color = vertex_color;
 }
