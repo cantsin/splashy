@@ -3,7 +3,6 @@ namespace Splashy
 open System
 open System.Drawing
 open System.Collections.Generic
-open System.IO
 
 open OpenTK
 open OpenTK.Graphics
@@ -22,28 +21,24 @@ type Splashy () =
 
   do base.VSync <- VSyncMode.On
 
-  let mutable shaders = []
-  let mutable main_program = 0
-  let mutable normal_program = 0
-
   // configuration.
   let continuous = false
+  let draw_debug = true
 
-  let mutable projection_location = 0
-  let mutable model_view_location = 0
-  let mutable vertex_location = 0 // allow VAOs to set their own matrix transform.
-
+  // input states.
   let mutable keyPressed = false // don't rush through the simulation.
-
-  let camera = new Camera ()
   let mutable mouseReady = false
+
+  // graphical sub-systems.
+  let camera = new Camera ()
+  let shader_manager = new ShaderManager ()
 
   // drawables.
   let world_bounds = new AreaBounds () // fixed, does not change.
   let mutable drawables = []
   let mutable cells = []
 
-  let refresh () =
+  let draw () =
     for (cell: IDrawable) in cells do
       cell.destroy ()
 
@@ -57,12 +52,12 @@ type Splashy () =
         cellbounds.set_translation (Vector3(x, y, z))
         yield cellbounds :> IDrawable ]
 
+    // we draw in a specific order for transparency reasons.
     let air = get_drawables (fun c -> c.media = Air)
     let fluid = get_drawables (fun c -> c.media = Fluid)
     let solids = get_drawables (fun c -> c.media = Solid)
 
     (world_bounds :> IDrawable).prepare main_program
-    // draw in a specific order for transparency reasons.
     cells <- fluid @ solids @ air
     for (cell: IDrawable) in cells do
       cell.prepare main_program
@@ -71,52 +66,14 @@ type Splashy () =
 
     drawables <- cells @ [(world_bounds :> IDrawable)]
 
-  let compile_shader shadertype filename =
-    let shader = GL.CreateShader(shadertype)
-    let source = File.ReadAllText filename
-    GL.ShaderSource(shader, source)
-    GL.CompileShader(shader)
-    shaders <- shader :: shaders
-    shader
-
-  let use_program (program: int) =
-    GL.UseProgram(program)
-    projection_location <- GL.GetUniformLocation(program, "projectionMatrix")
-    model_view_location <- GL.GetUniformLocation(program, "modelViewMatrix")
-    vertex_location <- GL.GetUniformLocation(program, "vertex_mat")
-    // check for errors.
-    let mutable s = ""
-    GL.GetProgramInfoLog(program, &s)
-    if not (Seq.isEmpty s) then
-      failwith (sprintf "Could not use shader program:\n%A" s)
-
   override o.OnLoad e =
-
     o.Cursor <- MouseCursor.Empty
 
     camera.initialize ()
+    shader_manager.initialize ()
 
-    normal_program <-
-      let program = GL.CreateProgram()
-      let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/normal.vert"
-      let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/normal.frag"
-      // let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/normal.geom"
-      GL.AttachShader(program, vertex_shader)
-      GL.AttachShader(program, fragment_shader)
-      // GL.AttachShader(program, geometry_shader)
-      GL.LinkProgram(program)
-      program
-
-    main_program <-
-      let program = GL.CreateProgram()
-      let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/simple.vert"
-      let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/simple.frag"
-      GL.AttachShader(program, vertex_shader)
-      GL.AttachShader(program, fragment_shader)
-      GL.LinkProgram(program)
-      program
-
-    use_program main_program
+    Simulator.advance 0.016671 // 30fps.
+    draw ()
 
     // set other GL states.
     GL.Enable(EnableCap.DepthTest)
@@ -124,18 +81,12 @@ type Splashy () =
     GL.Enable(EnableCap.Blend)
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
-    refresh ()
-
     base.OnLoad e
 
   override o.OnUnload(e) =
-    GL.UseProgram(0)
-    GL.DeleteProgram(main_program)
-    GL.DeleteProgram(normal_program)
-    for shader in shaders do
-      GL.DeleteShader(int32 shader)
     for drawable in drawables do
       drawable.destroy ()
+    shader_manager.unload ()
     base.OnUnload e
 
   override o.OnResize e =
@@ -148,9 +99,8 @@ type Splashy () =
                                                                   float32 base.Width / float32 base.Height,
                                                                   1.0f,
                                                                   640.0f)
-    GL.UniformMatrix4(projection_location, false, &projection)
-    let mutable m = camera.matrix ()
-    GL.UniformMatrix4(model_view_location, false, &m)
+    shader_manager.set_projection projection
+    shader_manager.set_model_view <| camera.matrix ()
 
   override o.OnKeyDown e =
     match e.Key with
@@ -163,7 +113,7 @@ type Splashy () =
         if not keyPressed && not continuous then
           try
             Simulator.advance 0.016671 // 30fps.
-            refresh ()
+            draw ()
             keyPressed <- true
           with
             | exn ->
@@ -197,20 +147,23 @@ type Splashy () =
 
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    let mutable m = camera.matrix ()
-    GL.UniformMatrix4(model_view_location, false, &m)
+    shader_manager.set_model_view <| camera.matrix ()
+
+    for drawable in drawables do
+      drawable.render ()
+
+    if draw_debug then
+      for drawable in drawables do
+        drawable.render_debug ()
 
     if continuous then
       try
         Simulator.advance e.Time
-        refresh ()
+        draw ()
       with
         | exn ->
           printfn "Exception! %A" exn.Message
           base.Close()
-
-    for drawable in drawables do
-      drawable.render vertex_location
 
     let code = GL.GetError ()
     if code <> ErrorCode.NoError then

@@ -1,6 +1,7 @@
 namespace Splashy
 
 open System.Linq
+open System.IO
 
 open OpenTK
 open OpenTK.Graphics
@@ -16,12 +17,83 @@ open Simulator
 
 type IDrawable =
   abstract member prepare: int -> unit
-  abstract member render: int -> unit
+  abstract member render: unit -> unit
+  abstract member render_debug: unit -> unit
   abstract member destroy: unit -> unit
 
 // encapsulate GL calls to draw the bounding area, markers, and cells.
 module Drawables =
 
+  let mutable main_program = 0
+  let mutable normal_program = 0
+  let mutable vertex_location = 0 // allow VAOs to set their own matrix transform.
+
+  type ShaderManager () =
+
+    let mutable shaders = []
+
+    let mutable projection_location = 0
+    let mutable model_view_location = 0
+
+    let compile_shader shadertype filename =
+      let shader = GL.CreateShader(shadertype)
+      let source = File.ReadAllText filename
+      GL.ShaderSource(shader, source)
+      GL.CompileShader(shader)
+      shaders <- shader :: shaders
+      shader
+
+    let use_program (program: int) =
+      GL.UseProgram(program)
+      projection_location <- GL.GetUniformLocation(program, "projectionMatrix")
+      model_view_location <- GL.GetUniformLocation(program, "modelViewMatrix")
+      vertex_location <- GL.GetUniformLocation(program, "vertex_mat")
+      // check for errors.
+      let mutable s = ""
+      GL.GetProgramInfoLog(program, &s)
+      if not (Seq.isEmpty s) then
+        failwith (sprintf "Could not use shader program:\n%A" s)
+
+    member this.initialize () =
+
+      normal_program <-
+        let program = GL.CreateProgram()
+        let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/normal.vert"
+        let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/normal.frag"
+        // let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/normal.geom"
+        GL.AttachShader(program, vertex_shader)
+        GL.AttachShader(program, fragment_shader)
+        // GL.AttachShader(program, geometry_shader)
+        GL.LinkProgram(program)
+        program
+
+      main_program <-
+        let program = GL.CreateProgram()
+        let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/simple.vert"
+        let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/simple.frag"
+        GL.AttachShader(program, vertex_shader)
+        GL.AttachShader(program, fragment_shader)
+        GL.LinkProgram(program)
+        program
+
+      use_program main_program
+
+    member this.set_projection (projection: Matrix4) =
+      let mutable m = projection
+      GL.UniformMatrix4(projection_location, false, &m)
+
+    member this.set_model_view (model_view: Matrix4) =
+      let mutable m = model_view
+      GL.UniformMatrix4(model_view_location, false, &m)
+
+    member this.unload () =
+      GL.UseProgram(0)
+      GL.DeleteProgram(main_program)
+      GL.DeleteProgram(normal_program)
+      for shader in shaders do
+        GL.DeleteShader(int32 shader)
+
+  // helper function
   let internal create_attrib_buffer (program: int) (attrib: string) (data: float32 []) =
     let new_buffer =
       let buffer = GL.GenBuffer()
@@ -35,6 +107,7 @@ module Drawables =
     GL.BindAttribLocation(program, location, attrib)
     (location, new_buffer)
 
+  // helper function
   let internal create_vao (program: int) (attributes: seq<string * float32 []>) (indices: int []) =
     let vao =
       let array = GL.GenVertexArray()
@@ -71,11 +144,12 @@ module Drawables =
                           ("vertex_normal", Aabb.normal_data);
                           ("vertex_color", color_data)]
         vao <- create_vao p attributes Aabb.indices_data
-      member this.render location =
-        GL.UniformMatrix4(location, false, &position)
+      member this.render () =
+        GL.UniformMatrix4(vertex_location, false, &position)
         GL.BindVertexArray(vao)
         GL.DrawElements(BeginMode.Quads, indices_data.Length, DrawElementsType.UnsignedInt, 0)
         GL.BindVertexArray(0)
+      member this.render_debug () = ()
       member this.destroy () =
         GL.DeleteVertexArray(vao)
 
@@ -101,12 +175,13 @@ module Drawables =
                           ("vertex_normal", Aabb.normal_data);
                           ("vertex_color", color_data)]
         vao <- create_vao p attributes Aabb.indices_data
-      member this.render location =
+      member this.render () =
         let mutable m = Matrix4.CreateTranslation(transform)
-        GL.UniformMatrix4(location, false, &m)
+        GL.UniformMatrix4(vertex_location, false, &m)
         GL.BindVertexArray(vao)
         GL.DrawElements(BeginMode.Quads, indices_data.Length, DrawElementsType.UnsignedInt, 0)
         GL.BindVertexArray(0)
+      member this.render_debug () = ()
       member this.destroy () =
         GL.DeleteVertexArray(vao)
     member this.set_translation t = transform <- t
