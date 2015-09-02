@@ -34,35 +34,18 @@ type Splashy () =
   let shader_manager = new ShaderManager ()
 
   // drawables.
-  let world_bounds = new AreaBounds () // fixed, does not change.
+  let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
+  let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
+  let air_color = [|1.0f; 1.0f; 1.0f; 0.01f|]
+  let bounds_color = [|1.0f; 1.0f; 1.0f; 0.1f|]
+
+  let world_bounds = new AreaBounds (bounds_color)
+  let fluid_bounds = new CellBounds (fluid_color)
+  let solid_bounds = new CellBounds (solid_color)
+  let air_bounds = new CellBounds (air_color)
+
   let mutable drawables = []
   let mutable cells = []
-
-  let draw () =
-    for (cell: IDrawable) in cells do
-      cell.destroy ()
-
-    let get_drawables fn =
-      [ for coord in Grid.filter fn do
-        let x = float32 coord.x
-        let y = float32 coord.y
-        let z = float32 coord.z
-        let cell = Grid.raw_get coord
-        let cellbounds = new CellBounds(cell)
-        cellbounds.set_translation (Vector3(x, y, z))
-        yield cellbounds :> IDrawable ]
-
-    // we draw in a specific order for transparency reasons.
-    let air = get_drawables (fun c -> c.media = Air)
-    let fluid = get_drawables (fun c -> c.media = Fluid)
-    let solids = get_drawables (fun c -> c.media = Solid)
-
-    (world_bounds :> IDrawable).prepare ()
-    cells <- fluid @ solids @ air
-    for (cell: IDrawable) in cells do
-      cell.prepare ()
-
-    drawables <- cells @ [(world_bounds :> IDrawable)]
 
   override o.OnLoad e =
     o.Cursor <- MouseCursor.Empty
@@ -70,8 +53,10 @@ type Splashy () =
     camera.initialize ()
     shader_manager.initialize ()
 
-    Simulator.advance 0.016671 // 30fps.
-    draw ()
+    world_bounds.prepare ()
+    fluid_bounds.prepare ()
+    solid_bounds.prepare ()
+    air_bounds.prepare ()
 
     // set other GL states.
     GL.Enable(EnableCap.DepthTest)
@@ -82,8 +67,10 @@ type Splashy () =
     base.OnLoad e
 
   override o.OnUnload(e) =
-    for drawable in drawables do
-      drawable.destroy ()
+    world_bounds.destroy ()
+    fluid_bounds.destroy ()
+    solid_bounds.destroy ()
+    air_bounds.destroy ()
     shader_manager.unload ()
     base.OnUnload e
 
@@ -111,7 +98,6 @@ type Splashy () =
         if not keyPressed && not continuous then
           try
             Simulator.advance 0.016671 // 30fps.
-            draw ()
             keyPressed <- true
           with
             | exn ->
@@ -147,21 +133,34 @@ type Splashy () =
 
     shader_manager.set_model_view <| camera.matrix ()
 
-    for drawable in drawables do
-      drawable.render ()
-
-    if draw_debug then
-      for drawable in drawables do
-        drawable.render_debug ()
-
     if continuous then
       try
         Simulator.advance e.Time
-        draw ()
       with
         | exn ->
           printfn "Exception! %A" exn.Message
           base.Close()
+
+    // draw the world and all the cells.
+    let get_drawables fn =
+      [ for coord in Grid.filter fn do
+        let x = float32 coord.x
+        let y = float32 coord.y
+        let z = float32 coord.z
+        yield Vector3(x, y, z) ]
+
+    // we draw in a specific order for transparency reasons.
+    let solids = get_drawables (fun c -> c.media = Solid)
+    let fluid = get_drawables (fun c -> c.media = Fluid)
+    let air = get_drawables (fun c -> c.media = Air)
+
+    for location in solids do
+      solid_bounds.render location
+    for location in fluid do
+      fluid_bounds.render location
+    for location in air do
+      air_bounds.render location
+    world_bounds.render ()
 
     let code = GL.GetError ()
     if code <> ErrorCode.NoError then
