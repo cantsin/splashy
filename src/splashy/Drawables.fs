@@ -16,7 +16,7 @@ open Grid
 open Simulator
 
 type IDrawable =
-  abstract member prepare: int -> unit
+  abstract member prepare: unit -> unit
   abstract member render: unit -> unit
   abstract member render_debug: unit -> unit
   abstract member destroy: unit -> unit
@@ -25,7 +25,7 @@ type IDrawable =
 module Drawables =
 
   let mutable main_program = 0
-  let mutable normal_program = 0
+  let mutable debug_program = 0
   let mutable vertex_location = 0
   let mutable projection_location = 0
   let mutable model_view_location = 0
@@ -56,14 +56,14 @@ module Drawables =
 
     member this.initialize () =
 
-      normal_program <-
+      debug_program <-
         let program = GL.CreateProgram()
         let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/simple.vert"
-        let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/normal.frag"
-        // let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/normal.geom"
+        let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/debug.frag"
+        let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/passthru.geom"
         GL.AttachShader(program, vertex_shader)
         GL.AttachShader(program, fragment_shader)
-        // GL.AttachShader(program, geometry_shader)
+        GL.AttachShader(program, geometry_shader)
         GL.LinkProgram(program)
         program
 
@@ -76,7 +76,7 @@ module Drawables =
         GL.LinkProgram(program)
         program
 
-      use_program main_program
+      use_program debug_program
 
     member this.set_projection (projection: Matrix4) =
       let mutable m = projection
@@ -89,7 +89,7 @@ module Drawables =
     member this.unload () =
       GL.UseProgram(0)
       GL.DeleteProgram(main_program)
-      GL.DeleteProgram(normal_program)
+      GL.DeleteProgram(debug_program)
       for shader in shaders do
         GL.DeleteShader(int32 shader)
 
@@ -137,13 +137,13 @@ module Drawables =
     let mutable position = Matrix4.Identity
     let color = [|1.0f; 1.0f; 1.0f; 0.1f|]
     interface IDrawable with
-      member this.prepare p =
+      member this.prepare () =
         let vertex_data = Aabb.raw_data World.bounds
         let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
         let attributes = [("vertex_position", vertex_data);
                           ("vertex_normal", Aabb.normal_data);
                           ("vertex_color", color_data)]
-        vao <- create_vao p attributes Aabb.indices_data
+        vao <- create_vao main_program attributes Aabb.indices_data
       member this.render () =
         use_program main_program
         GL.UniformMatrix4(vertex_location, false, &position)
@@ -157,7 +157,7 @@ module Drawables =
   type CellBounds (cell) =
     let mutable data = cell
     let mutable main_vao = 0
-    let mutable normal_vao = 0
+    let mutable debug_vao = 0
     let mutable transform = Vector3.Zero
     let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
     let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
@@ -166,7 +166,7 @@ module Drawables =
     let cell_bounds = { min_bounds = Vector3(-l, -l, -l);
                         max_bounds = Vector3( l,  l,  l) }
     interface IDrawable with
-      member this.prepare p =
+      member this.prepare () =
         let color = match cell.media with
                        | Fluid -> fluid_color
                        | Solid -> solid_color
@@ -176,9 +176,9 @@ module Drawables =
         let attributes = [("vertex_position", vertex_data);
                           ("vertex_normal", Aabb.normal_data);
                           ("vertex_color", color_data)]
-        main_vao <- create_vao p attributes Aabb.indices_data
+        main_vao <- create_vao main_program attributes Aabb.indices_data
         let attributes = [("vertex_position", vertex_data)]
-        normal_vao <- create_vao p attributes Aabb.indices_data
+        debug_vao <- create_vao debug_program attributes Aabb.indices_data
       member this.render () =
         use_program main_program
         let mutable m = Matrix4.CreateTranslation(transform)
@@ -187,13 +187,13 @@ module Drawables =
         GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
         GL.BindVertexArray(0)
       member this.render_debug () =
-        use_program normal_program
+        use_program debug_program
         let mutable m = Matrix4.CreateTranslation(transform)
         GL.UniformMatrix4(vertex_location, false, &m)
-        GL.BindVertexArray(normal_vao)
+        GL.BindVertexArray(debug_vao)
         GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
         GL.BindVertexArray(0)
       member this.destroy () =
         GL.DeleteVertexArray(main_vao)
-        GL.DeleteVertexArray(normal_vao)
+        GL.DeleteVertexArray(debug_vao)
     member this.set_translation t = transform <- t

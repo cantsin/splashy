@@ -57,12 +57,10 @@ type Splashy () =
     let fluid = get_drawables (fun c -> c.media = Fluid)
     let solids = get_drawables (fun c -> c.media = Solid)
 
-    (world_bounds :> IDrawable).prepare main_program
+    (world_bounds :> IDrawable).prepare ()
     cells <- fluid @ solids @ air
     for (cell: IDrawable) in cells do
-      cell.prepare main_program
-    // for (cell: IDrawable) in cells do
-    //   cell.prepare_normal normal_program
+      cell.prepare ()
 
     drawables <- cells @ [(world_bounds :> IDrawable)]
 
