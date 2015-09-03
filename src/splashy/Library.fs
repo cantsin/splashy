@@ -23,7 +23,6 @@ type Splashy () =
 
   // configuration.
   let continuous = false
-  let draw_debug = true
 
   // input states.
   let mutable keyPressed = false // don't rush through the simulation.
@@ -44,8 +43,6 @@ type Splashy () =
   let solid_bounds = new CellBounds (solid_color)
   let air_bounds = new CellBounds (air_color)
 
-  let mutable drawables = []
-  let mutable cells = []
 
   override o.OnLoad e =
     o.Cursor <- MouseCursor.Empty
@@ -90,6 +87,7 @@ type Splashy () =
   override o.OnKeyDown e =
     match e.Key with
       | Key.Escape -> base.Close()
+      | Key.Number0 -> shader_manager.toggle_debug ()
       | Key.W -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
       | Key.A -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
       | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))

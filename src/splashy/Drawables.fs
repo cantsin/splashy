@@ -40,6 +40,7 @@ module Drawables =
   type ShaderManager () =
 
     let mutable shaders = []
+    let mutable debug_mode = false
 
     let compile_shader shadertype filename =
       let shader = GL.CreateShader(shadertype)
@@ -80,6 +81,10 @@ module Drawables =
     member this.set_model_view (model_view: Matrix4) =
       let mutable m = model_view
       GL.UniformMatrix4(model_view_location, false, &m)
+
+    member this.toggle_debug () =
+      debug_mode <- not debug_mode
+      use_program (if debug_mode then debug_program else main_program)
 
     member this.unload () =
       GL.UseProgram(0)
@@ -129,21 +134,19 @@ module Drawables =
 
   type AreaBounds (color) =
     let mutable vao = 0
-    let mutable position = Matrix4.Identity
+    let vertex_data = Aabb.raw_data World.bounds
+    let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
+    let attributes = [("vertex_position", vertex_data);
+                      ("vertex_normal", Aabb.normal_data);
+                      ("vertex_color", color_data)]
     member this.prepare () =
-      let vertex_data = Aabb.raw_data World.bounds
-      let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
-      let attributes = [("vertex_position", vertex_data);
-                        ("vertex_normal", Aabb.normal_data);
-                        ("vertex_color", color_data)]
       vao <- create_vao main_program attributes Aabb.indices_data
     member this.render () =
-      use_program main_program
-      GL.UniformMatrix4(vertex_location, false, &position)
+      let mutable m = Matrix4.Identity
+      GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(vao)
       GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
       GL.BindVertexArray(0)
-    member this.render_debug () = ()
     member this.destroy () =
       GL.DeleteVertexArray(vao)
 
@@ -153,24 +156,22 @@ module Drawables =
     let l = float32 Constants.h / 2.0f
     let cell_bounds = { min_bounds = Vector3(-l, -l, -l);
                         max_bounds = Vector3( l,  l,  l) }
+    let vertex_data = Aabb.raw_data <| Aabb.fudge cell_bounds
+    let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
+    let attributes = [("vertex_position", vertex_data);
+                      ("vertex_normal", Aabb.normal_data);
+                      ("vertex_color", color_data)]
+    let debug_attributes = [("vertex_position", vertex_data)]
     member this.prepare () =
-      let vertex_data = Aabb.raw_data <| Aabb.fudge cell_bounds
-      let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
-      let attributes = [("vertex_position", vertex_data);
-                        ("vertex_normal", Aabb.normal_data);
-                        ("vertex_color", color_data)]
       main_vao <- create_vao main_program attributes Aabb.indices_data
-      let attributes = [("vertex_position", vertex_data)]
-      debug_vao <- create_vao debug_program attributes Aabb.indices_data
+      debug_vao <- create_vao debug_program debug_attributes Aabb.indices_data
     member this.render where =
-      use_program main_program
       let mutable m = Matrix4.CreateTranslation(where)
       GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(main_vao)
       GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
       GL.BindVertexArray(0)
     member this.render_debug where =
-      use_program debug_program
       let mutable m = Matrix4.CreateTranslation(where)
       GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(debug_vao)
