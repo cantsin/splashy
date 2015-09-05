@@ -132,10 +132,14 @@ module Drawables =
 
     vao
 
+  // helper function
+  let repeat_seq (s: seq<'a>) (l: int) =
+    Seq.collect Enumerable.Repeat [ s, l ] |> Seq.concat |> Array.ofSeq
+
   type AreaBounds (color) =
     let mutable vao = 0
     let vertex_data = Aabb.raw_data World.bounds
-    let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
+    let color_data = repeat_seq color (vertex_data.Length / 4 + 1)
     let attributes = [("vertex_position", vertex_data);
                       ("vertex_normal", Aabb.normal_data);
                       ("vertex_color", color_data)]
@@ -157,7 +161,7 @@ module Drawables =
     let cell_bounds = { min_bounds = Vector3(-l, -l, -l);
                         max_bounds = Vector3( l,  l,  l) }
     let vertex_data = Aabb.raw_data <| Aabb.fudge cell_bounds
-    let color_data = Seq.collect Enumerable.Repeat [ color, vertex_data.Length / 4 + 1 ] |> Seq.concat |> Array.ofSeq
+    let color_data = repeat_seq color (vertex_data.Length / 4 + 1)
     let attributes = [("vertex_position", vertex_data);
                       ("vertex_normal", Aabb.normal_data);
                       ("vertex_color", color_data)]

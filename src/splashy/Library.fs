@@ -43,7 +43,6 @@ type Splashy () =
   let solid_bounds = new CellBounds (solid_color)
   let air_bounds = new CellBounds (air_color)
 
-
   override o.OnLoad e =
     o.Cursor <- MouseCursor.Empty
 
@@ -77,10 +76,10 @@ type Splashy () =
                 base.ClientRectangle.Y,
                 base.ClientRectangle.Width,
                 base.ClientRectangle.Height)
-    let mutable projection = Matrix4.CreatePerspectiveFieldOfView(float32 (Math.PI / 4.0),
-                                                                  float32 base.Width / float32 base.Height,
-                                                                  1.0f,
-                                                                  640.0f)
+    let projection = Matrix4.CreatePerspectiveFieldOfView(float32 (Math.PI / 4.0),
+                                                          float32 base.Width / float32 base.Height,
+                                                          1.0f,
+                                                          640.0f)
     shader_manager.set_projection projection
     shader_manager.set_model_view <| camera.matrix ()
 
