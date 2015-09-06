@@ -1,5 +1,6 @@
 namespace Splashy
 
+open System
 open System.Linq
 open System.IO
 
@@ -25,22 +26,23 @@ module Drawables =
   let mutable model_view_location = 0
 
   // helper function
+  let check_program (program: int) =
+    let mutable s = ""
+    GL.GetProgramInfoLog(program, &s)
+    if not (Seq.isEmpty s) then
+      failwith (sprintf "Could not use shader program:\n%A" s)
+
+  // helper function
   let use_program (program: int) =
     GL.UseProgram(program)
     if program <> 0 then
-      projection_location <- GL.GetUniformLocation(program, "projectionMatrix")
-      model_view_location <- GL.GetUniformLocation(program, "modelViewMatrix")
+      projection_location <- GL.GetUniformLocation(program, "projection_matrix")
+      model_view_location <- GL.GetUniformLocation(program, "model_view_matrix")
       vertex_location <- GL.GetUniformLocation(program, "vertex_mat")
-      // check for errors.
-      let mutable s = ""
-      GL.GetProgramInfoLog(program, &s)
-      if not (Seq.isEmpty s) then
-        failwith (sprintf "Could not use shader program:\n%A" s)
 
   type ShaderManager () =
 
     let mutable shaders = []
-    let mutable debug_mode = false
 
     let compile_shader shadertype filename =
       let shader = GL.CreateShader(shadertype)
@@ -55,12 +57,13 @@ module Drawables =
       debug_program <-
         let program = GL.CreateProgram()
         let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/simple.vert"
-        let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/debug.frag"
         let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/passthru.geom"
+        let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/debug.frag"
         GL.AttachShader(program, vertex_shader)
-        GL.AttachShader(program, fragment_shader)
         GL.AttachShader(program, geometry_shader)
+        GL.AttachShader(program, fragment_shader)
         GL.LinkProgram(program)
+        check_program program
         program
 
       main_program <-
@@ -70,21 +73,23 @@ module Drawables =
         GL.AttachShader(program, vertex_shader)
         GL.AttachShader(program, fragment_shader)
         GL.LinkProgram(program)
+        check_program program
         program
 
       use_program main_program
 
-    member this.set_projection (projection: Matrix4) =
-      let mutable m = projection
+    member this.set_projection width height =
+      let fovy = float32 (Math.PI / 4.0)
+      let aspect = float32 width / float32 height
+      let mutable m = Matrix4.CreatePerspectiveFieldOfView(fovy, aspect, 1.0f, 640.0f)
       GL.UniformMatrix4(projection_location, false, &m)
 
     member this.set_model_view (model_view: Matrix4) =
       let mutable m = model_view
       GL.UniformMatrix4(model_view_location, false, &m)
 
-    member this.toggle_debug () =
-      debug_mode <- not debug_mode
-      use_program (if debug_mode then debug_program else main_program)
+    member this.set_debug debug =
+      use_program (if debug then debug_program else main_program)
 
     member this.unload () =
       GL.UseProgram(0)
@@ -169,16 +174,10 @@ module Drawables =
     member this.prepare () =
       main_vao <- create_vao main_program attributes Aabb.indices_data
       debug_vao <- create_vao debug_program debug_attributes Aabb.indices_data
-    member this.render where =
+    member this.render where debug =
       let mutable m = Matrix4.CreateTranslation(where)
       GL.UniformMatrix4(vertex_location, false, &m)
-      GL.BindVertexArray(main_vao)
-      GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
-      GL.BindVertexArray(0)
-    member this.render_debug where =
-      let mutable m = Matrix4.CreateTranslation(where)
-      GL.UniformMatrix4(vertex_location, false, &m)
-      GL.BindVertexArray(debug_vao)
+      GL.BindVertexArray(if debug then debug_vao else main_vao)
       GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
       GL.BindVertexArray(0)
     member this.destroy () =

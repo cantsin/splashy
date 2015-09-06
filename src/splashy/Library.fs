@@ -1,6 +1,5 @@
 namespace Splashy
 
-open System
 open System.Drawing
 open System.Collections.Generic
 
@@ -23,6 +22,7 @@ type Splashy () =
 
   // configuration.
   let continuous = false
+  let mutable debug_mode = false
 
   // input states.
   let mutable keyPressed = false // don't rush through the simulation.
@@ -76,17 +76,17 @@ type Splashy () =
                 base.ClientRectangle.Y,
                 base.ClientRectangle.Width,
                 base.ClientRectangle.Height)
-    let projection = Matrix4.CreatePerspectiveFieldOfView(float32 (Math.PI / 4.0),
-                                                          float32 base.Width / float32 base.Height,
-                                                          1.0f,
-                                                          640.0f)
-    shader_manager.set_projection projection
+    shader_manager.set_projection base.Width base.Height
     shader_manager.set_model_view <| camera.matrix ()
 
   override o.OnKeyDown e =
     match e.Key with
       | Key.Escape -> base.Close()
-      | Key.Number0 -> shader_manager.toggle_debug ()
+      | Key.Number0 ->
+        debug_mode <- not debug_mode
+        shader_manager.set_debug debug_mode
+        shader_manager.set_projection base.Width base.Height
+        shader_manager.set_model_view <| camera.matrix ()
       | Key.W -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
       | Key.A -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
       | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
@@ -152,11 +152,11 @@ type Splashy () =
     let air = get_drawables (fun c -> c.media = Air)
 
     for location in solids do
-      solid_bounds.render location
+      solid_bounds.render location debug_mode
     for location in fluid do
-      fluid_bounds.render location
+      fluid_bounds.render location debug_mode
     for location in air do
-      air_bounds.render location
+      air_bounds.render location debug_mode
     world_bounds.render ()
 
     let code = GL.GetError ()
