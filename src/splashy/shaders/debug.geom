@@ -1,17 +1,17 @@
-#version 330 core
+#version 440
 
 layout (triangles) in;
 layout (line_strip, max_vertices = 2) out;
 
-in VertexData {
+in VS_OUT {
     vec3 normal;
     vec3 color;
-} VertexIn[];
+} gs_in[];
 
-out VertexData {
+out GS_OUT {
     vec3 normal;
     vec3 color;
-} VertexOut;
+} gs_out;
 
 const float MAGNITUDE = 0.4f;
 

@@ -38,7 +38,7 @@ module Drawables =
     if program <> 0 then
       projection_location <- GL.GetUniformLocation(program, "projection_matrix")
       model_view_location <- GL.GetUniformLocation(program, "model_view_matrix")
-      vertex_location <- GL.GetUniformLocation(program, "vertex_mat")
+      vertex_location <- GL.GetUniformLocation(program, "vertex_matrix")
 
   type ShaderManager () =
 

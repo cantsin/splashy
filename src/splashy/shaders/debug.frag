@@ -1,11 +1,11 @@
-#version 130
+#version 440
 
-in vec3 normal;
-in vec4 color;
+layout(location = 3) in vec3 normal;
+layout(location = 4) in vec4 color;
 
-out vec4 outputColor;
+out vec4 final_color;
 
 void main()
 {
-    outputColor = vec4(1.0f, 1.0f, 0.0f, 1.0f); // color;
+    final_color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
 }

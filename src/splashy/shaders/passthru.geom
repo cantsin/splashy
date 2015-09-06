@@ -1,17 +1,17 @@
-#version 330 core
+#version 440
 
 layout (triangles) in;
 layout (triangle_strip, max_vertices=3) out;
 
-in VertexData {
+in VS_OUT {
     vec3 normal;
     vec3 color;
-} VertexIn[3];
+} gs_in[3];
 
-out VertexData {
+out GS_OUT {
     vec3 normal;
     vec3 color;
-} VertexOut;
+} gs_out;
 
 void main()
 {
@@ -19,8 +19,8 @@ void main()
     {
         // copy attributes
         gl_Position = gl_in[i].gl_Position;
-        VertexOut.normal = VertexIn[i].normal;
-        VertexOut.color = VertexIn[i].color;
+        gs_out.normal = gs_in[i].normal;
+        gs_out.color = gs_in[i].color;
 
         // done with the vertex
         EmitVertex();
