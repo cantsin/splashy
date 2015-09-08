@@ -4,13 +4,13 @@ layout (triangles) in;
 layout (triangle_strip, max_vertices=3) out;
 
 in VS_OUT {
-    vec3 normal;
-    vec3 color;
+    layout(location = 3) vec3 normal;
+    layout(location = 4) vec4 color;
 } gs_in[3];
 
 out GS_OUT {
-    vec3 normal;
-    vec3 color;
+    layout(location = 9) out vec3 normal;
+    layout(location = 10) out vec4 color;
 } gs_out;
 
 void main()

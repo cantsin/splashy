@@ -10,12 +10,14 @@ layout(location = 0) in vec4 vertex_position;
 layout(location = 1) in vec4 vertex_normal;
 layout(location = 2) in vec4 vertex_color;
 
-layout(location = 3) out vec3 normal;
-layout(location = 4) out vec4 color;
+out VS_OUT {
+    layout(location = 3) vec3 normal;
+    layout(location = 4) vec4 color;
+} vs_out;
 
 void main()
 {
     gl_Position = projection_matrix * model_view_matrix * vertex_matrix * vertex_position;
-    normal = (model_view_matrix * vertex_normal).xyz;
-    color = vertex_color;
+    vs_out.normal = (model_view_matrix * vertex_normal).xyz;
+    vs_out.color = vertex_color;
 }
