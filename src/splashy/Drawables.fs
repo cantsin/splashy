@@ -88,8 +88,8 @@ module Drawables =
       let mutable m = model_view
       GL.UniformMatrix4(model_view_location, false, &m)
 
-    member this.set_debug debug =
-      use_program (if debug then debug_program else main_program)
+    member this.use_debug () = use_program debug_program
+    member this.use_main () = use_program main_program
 
     member this.unload () =
       GL.UseProgram(0)

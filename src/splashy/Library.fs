@@ -85,9 +85,6 @@ type Splashy () =
       | Key.Escape -> base.Close()
       | Key.Number0 ->
         debug_mode <- not debug_mode
-        shader_manager.set_debug debug_mode
-        shader_manager.set_projection base.Width base.Height
-        shader_manager.set_model_view <| camera.matrix ()
       | Key.W -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
       | Key.A -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
       | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
@@ -129,8 +126,6 @@ type Splashy () =
 
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
 
-    shader_manager.set_model_view <| camera.matrix ()
-
     if continuous then
       try
         Simulator.advance e.Time
@@ -152,6 +147,10 @@ type Splashy () =
     let fluid = get_drawables (fun c -> c.media = Fluid)
     let air = get_drawables (fun c -> c.media = Air)
 
+    // first pass.
+    shader_manager.use_main ()
+    shader_manager.set_projection base.Width base.Height
+    shader_manager.set_model_view <| camera.matrix ()
     for location in solids do
       solid_bounds.render location debug_mode
     for location in fluid do
@@ -159,6 +158,19 @@ type Splashy () =
     for location in air do
       air_bounds.render location debug_mode
     world_bounds.render ()
+
+    // second pass (only if debugging).
+    if debug_mode then
+      shader_manager.use_debug ()
+      shader_manager.set_projection base.Width base.Height
+      shader_manager.set_model_view <| camera.matrix ()
+      for location in solids do
+        solid_bounds.render location debug_mode
+      for location in fluid do
+        fluid_bounds.render location debug_mode
+      for location in air do
+        air_bounds.render location debug_mode
+      world_bounds.render ()
 
     let code = GL.GetError ()
     if code <> ErrorCode.NoError then
