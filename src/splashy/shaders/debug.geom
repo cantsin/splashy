@@ -4,16 +4,16 @@ layout (triangles) in;
 layout (line_strip, max_vertices = 2) out;
 
 in VS_OUT {
-    vec3 normal;
-    vec3 color;
-} gs_in[];
+    layout(location = 3) vec3 normal;
+    layout(location = 4) vec4 color;
+} gs_in[3];
 
 out GS_OUT {
-    vec3 normal;
-    vec3 color;
+    layout(location = 5) vec3 normal;
+    layout(location = 6) vec4 color;
 } gs_out;
 
-const float MAGNITUDE = 0.4f;
+const float MAGNITUDE = 10.0f;
 
 void main()
 {
@@ -21,12 +21,12 @@ void main()
                          gl_in[1].gl_Position +
                          gl_in[2].gl_Position) / 3.0;
     gl_Position = tri_centroid;
-    VertexOut.normal = VertexIn[0].normal;
-    VertexOut.color = VertexIn[0].color;
+    gs_out.normal = gs_in[0].normal;
+    gs_out.color = gs_in[0].color;
     EmitVertex();
-    gl_Position = tri_centroid + vec4(VertexIn[0].normal, 0.0f) * MAGNITUDE;
-    VertexOut.normal = VertexIn[0].normal;
-    VertexOut.color = VertexIn[0].color;
+    gl_Position = tri_centroid + vec4(gs_in[0].normal, 0.0f) * MAGNITUDE;
+    gs_out.normal = gs_in[0].normal;
+    gs_out.color = gs_in[0].color;
     EmitVertex();
     EndPrimitive();
 }

@@ -57,7 +57,7 @@ module Drawables =
       debug_program <-
         let program = GL.CreateProgram()
         let vertex_shader = compile_shader ShaderType.VertexShader "src/splashy/shaders/simple.vert"
-        let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/passthru.geom"
+        let geometry_shader = compile_shader ShaderType.GeometryShader "src/splashy/shaders/debug.geom"
         let fragment_shader = compile_shader ShaderType.FragmentShader "src/splashy/shaders/debug.frag"
         GL.AttachShader(program, vertex_shader)
         GL.AttachShader(program, geometry_shader)

@@ -59,6 +59,7 @@ type Splashy () =
     GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One)
     GL.Enable(EnableCap.Blend)
     GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
+    GL.LineWidth(2.0f);
 
     base.OnLoad e
 
