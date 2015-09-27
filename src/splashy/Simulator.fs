@@ -129,5 +129,6 @@ module Simulator =
     let to_vec m = Vector3d<m>(float m.x * 1.0<m>, float m.y * 1.0<m>, float m.z * 1.0<m>)
     locations <- Seq.map to_vec markers |> Seq.toList
     let actual = Seq.length markers
+    Build.add_new_markers markers |> Grid.add_cells
     if actual <> n then
       printfn "Warning: could only generate %d random markers." actual

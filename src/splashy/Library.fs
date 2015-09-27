@@ -22,7 +22,7 @@ type Splashy () =
 
   // configuration.
   let continuous = false
-  let mutable debug_mode = false
+  let mutable debug_mode = true
 
   // input states.
   let mutable keyPressed = false // don't rush through the simulation.
@@ -35,7 +35,7 @@ type Splashy () =
   // drawables.
   let fluid_color = [|0.2f; 0.2f; 0.8f; 0.7f|]
   let solid_color = [|0.64f; 0.16f; 0.16f; 0.5f|]
-  let air_color = [|1.0f; 1.0f; 1.0f; 0.01f|]
+  let air_color = [|1.0f; 1.0f; 1.0f; 0.08f|]
   let bounds_color = [|1.0f; 1.0f; 1.0f; 0.1f|]
 
   let world_bounds = new AreaBounds (bounds_color)
@@ -152,11 +152,11 @@ type Splashy () =
     shader_manager.set_projection base.Width base.Height
     shader_manager.set_model_view <| camera.matrix ()
     for location in solids do
-      solid_bounds.render location false
+      solid_bounds.render location
     for location in fluid do
-      fluid_bounds.render location false
+      fluid_bounds.render location
     for location in air do
-      air_bounds.render location false
+      air_bounds.render location
     world_bounds.render ()
 
     // second pass (only if debugging).
@@ -166,11 +166,11 @@ type Splashy () =
       shader_manager.set_projection base.Width base.Height
       shader_manager.set_model_view <| camera.matrix ()
       for location in solids do
-        solid_bounds.render location true
+        solid_bounds.render_debug location
       for location in fluid do
-        fluid_bounds.render location true
+        fluid_bounds.render_debug location
       for location in air do
-        air_bounds.render location true
+        air_bounds.render_debug location
       GL.Enable(EnableCap.DepthTest)
 
     let code = GL.GetError ()
