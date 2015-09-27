@@ -19,7 +19,7 @@ void main()
                          gl_in[2].gl_Position) / 3.0;
     gl_Position = gs_in[0].mvp * tri_centroid;
     EmitVertex();
-    gl_Position = gs_in[0].mvp * (tri_centroid - vec4(face_normal, 0.0f) * MAGNITUDE);
+    gl_Position = gs_in[0].mvp * (tri_centroid + vec4(face_normal, 0.0f) * MAGNITUDE);
     EmitVertex();
     EndPrimitive();
 }
