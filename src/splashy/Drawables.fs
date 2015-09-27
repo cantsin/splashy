@@ -24,6 +24,7 @@ module Drawables =
   let mutable vertex_location = 0
   let mutable projection_location = 0
   let mutable model_view_location = 0
+  let mutable velocity_location = 0
 
   // helper function
   let check_program (program: int) =
@@ -39,6 +40,7 @@ module Drawables =
       projection_location <- GL.GetUniformLocation(program, "projection_matrix")
       model_view_location <- GL.GetUniformLocation(program, "model_view_matrix")
       vertex_location <- GL.GetUniformLocation(program, "vertex_matrix")
+      velocity_location <- GL.GetUniformLocation(program, "cell_velocity")
 
   type ShaderManager () =
 
@@ -180,8 +182,12 @@ module Drawables =
     member this.prepare () =
       main_vao <- create_vao main_program attributes Aabb.indices_data
       debug_vao <- create_vao debug_program debug_attributes Aabb.indices_data
-    member this.render where = this.render_internal where main_vao
-    member this.render_debug where = this.render_internal where debug_vao
+    member this.render where =
+      this.render_internal where main_vao
+    member this.render_debug c where =
+      let mutable v = Vector3(float32 c.velocity.x, float32 c.velocity.y, float32 c.velocity.z)
+      GL.Uniform3(velocity_location, &v)
+      this.render_internal where debug_vao
     member this.destroy () =
       GL.DeleteVertexArray(main_vao)
       GL.DeleteVertexArray(debug_vao)

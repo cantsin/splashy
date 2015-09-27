@@ -58,7 +58,7 @@ type Splashy () =
     GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One)
     GL.Enable(EnableCap.Blend)
     GL.Enable(EnableCap.DepthTest)
-    GL.LineWidth(2.0f);
+    GL.LineWidth(2.0f)
 
     base.OnLoad e
 
@@ -140,7 +140,8 @@ type Splashy () =
         let x = float32 coord.x
         let y = float32 coord.y
         let z = float32 coord.z
-        yield Vector3(x, y, z) ]
+        let c = Grid.raw_get coord
+        yield (c, Vector3(x, y, z)) ]
 
     // we draw in a specific order for transparency reasons.
     let solids = get_drawables (fun c -> c.media = Solid)
@@ -151,11 +152,11 @@ type Splashy () =
     shader_manager.use_main ()
     shader_manager.set_projection base.Width base.Height
     shader_manager.set_model_view <| camera.matrix ()
-    for location in solids do
+    for (_, location) in solids do
       solid_bounds.render location
-    for location in fluid do
+    for (_, location) in fluid do
       fluid_bounds.render location
-    for location in air do
+    for (_, location) in air do
       air_bounds.render location
     world_bounds.render ()
 
@@ -165,12 +166,12 @@ type Splashy () =
       shader_manager.use_debug ()
       shader_manager.set_projection base.Width base.Height
       shader_manager.set_model_view <| camera.matrix ()
-      for location in solids do
-        solid_bounds.render_debug location
-      for location in fluid do
-        fluid_bounds.render_debug location
-      for location in air do
-        air_bounds.render_debug location
+      for (cell, location) in solids do
+        solid_bounds.render_debug cell location
+      for (cell, location) in fluid do
+        fluid_bounds.render_debug cell location
+      for (cell, location) in air do
+        air_bounds.render_debug cell location
       GL.Enable(EnableCap.DepthTest)
 
     let code = GL.GetError ()
