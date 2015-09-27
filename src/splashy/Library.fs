@@ -55,10 +55,9 @@ type Splashy () =
     air_bounds.prepare ()
 
     // set other GL states.
-    GL.Enable(EnableCap.DepthTest)
     GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One)
     GL.Enable(EnableCap.Blend)
-    GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
+    GL.Enable(EnableCap.DepthTest)
     GL.LineWidth(2.0f);
 
     base.OnLoad e
@@ -125,6 +124,7 @@ type Splashy () =
   override o.OnRenderFrame(e) =
 
     GL.Clear(ClearBufferMask.ColorBufferBit ||| ClearBufferMask.DepthBufferBit)
+    GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f)
 
     if continuous then
       try
@@ -152,25 +152,26 @@ type Splashy () =
     shader_manager.set_projection base.Width base.Height
     shader_manager.set_model_view <| camera.matrix ()
     for location in solids do
-      solid_bounds.render location debug_mode
+      solid_bounds.render location false
     for location in fluid do
-      fluid_bounds.render location debug_mode
+      fluid_bounds.render location false
     for location in air do
-      air_bounds.render location debug_mode
+      air_bounds.render location false
     world_bounds.render ()
 
     // second pass (only if debugging).
     if debug_mode then
+      GL.Disable(EnableCap.DepthTest)
       shader_manager.use_debug ()
       shader_manager.set_projection base.Width base.Height
       shader_manager.set_model_view <| camera.matrix ()
       for location in solids do
-        solid_bounds.render location debug_mode
+        solid_bounds.render location true
       for location in fluid do
-        fluid_bounds.render location debug_mode
+        fluid_bounds.render location true
       for location in air do
-        air_bounds.render location debug_mode
-      world_bounds.render ()
+        air_bounds.render location true
+      GL.Enable(EnableCap.DepthTest)
 
     let code = GL.GetError ()
     if code <> ErrorCode.NoError then
