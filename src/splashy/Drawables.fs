@@ -154,7 +154,7 @@ module Drawables =
       let mutable m = Matrix4.Identity
       GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(vao)
-      GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
+      GL.DrawElements(BeginMode.Triangles, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
       GL.BindVertexArray(0)
     member this.destroy () =
       GL.DeleteVertexArray(vao)
@@ -178,7 +178,7 @@ module Drawables =
       let mutable m = Matrix4.CreateTranslation(where)
       GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(if debug then debug_vao else main_vao)
-      GL.DrawElements(BeginMode.Quads, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
+      GL.DrawElements(BeginMode.Triangles, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
       GL.BindVertexArray(0)
     member this.destroy () =
       GL.DeleteVertexArray(main_vao)
