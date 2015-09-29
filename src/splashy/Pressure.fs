@@ -77,7 +77,7 @@ module Pressure =
 
   // calculate solid wall pressure (which is not uniform!)
   let get_solid_pressure solid_cell (origin: Coord) p (inv_c: float<(m^2*s)/kg>) d =
-    if solid_cell.media = Solid then
+    if solid_cell.media <> Solid then
       failwith "not a solid!"
     let vsolid = solid_cell.velocity
     let vborder = (Grid.raw_get origin).velocity
