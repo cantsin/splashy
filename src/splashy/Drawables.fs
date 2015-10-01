@@ -173,21 +173,21 @@ module Drawables =
                       ("vertex_normal", Aabb.normal_data);
                       ("vertex_color", color_data)]
     let debug_attributes = [("vertex_position", vertex_data)]
-    member private this.render_internal (where: Vector3) (vao: int) =
+    member private this.render_internal (where: Vector3) (vao: int) (length: int) =
       let mutable m = Matrix4.CreateTranslation(where)
       GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(vao)
-      GL.DrawElements(BeginMode.Triangles, Aabb.indices_data.Length, DrawElementsType.UnsignedInt, 0)
+      GL.DrawElements(BeginMode.Triangles, length, DrawElementsType.UnsignedInt, 0)
       GL.BindVertexArray(0)
     member this.prepare () =
       main_vao <- create_vao main_program attributes Aabb.indices_data
-      debug_vao <- create_vao debug_program debug_attributes Aabb.indices_data
+      debug_vao <- create_vao debug_program debug_attributes Aabb.half_indices_data
     member this.render where =
-      this.render_internal where main_vao
+      this.render_internal where main_vao Aabb.indices_data.Length
     member this.render_debug c where =
       let mutable v = Vector3(float32 c.velocity.x, float32 c.velocity.y, float32 c.velocity.z)
       GL.Uniform3(velocity_location, &v)
-      this.render_internal where debug_vao
+      this.render_internal where debug_vao Aabb.half_indices_data.Length
     member this.destroy () =
       GL.DeleteVertexArray(main_vao)
       GL.DeleteVertexArray(debug_vao)

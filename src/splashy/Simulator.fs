@@ -53,7 +53,6 @@ module Simulator =
     // if iterations > number_iterations then
     //   failwith "Done."
 
-    let dt = 0.166
     let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
     printfn "Moving simulation forward with time step %A." dt

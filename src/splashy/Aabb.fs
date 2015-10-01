@@ -45,6 +45,13 @@ module Aabb =
                       1; 5; 6;  6; 2; 1; // right
                       |]
 
+  // render only the positive axes.
+  let half_indices_data = [|
+                           0; 1; 2;  2; 3; 0; // front
+                           3; 2; 6;  6; 7; 3; // top
+                           1; 5; 6;  6; 2; 1; // right
+                           |]
+
   let normal_data = [|
                      -1.0f; -1.0f;  1.0f; 0.0f;
                       1.0f; -1.0f;  1.0f; 0.0f;
