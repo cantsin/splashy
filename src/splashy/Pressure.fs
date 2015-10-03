@@ -61,13 +61,9 @@ module Pressure =
     if not (m.IsSymmetric ()) then
       failwith "Coefficient matrix is not symmetric."
     // calculate divergences of the velocity field.
-    let c = (Constants.h * Constants.fluid_density) / dt
+    let c: float<kg/(m^2*s)> = (Constants.h * Constants.fluid_density) / dt
     let b = markers
-            |> Seq.map (fun m ->
-                          let f = divergence m
-                          let result: float<kg/(m*s^2)> = c * f // ensure we have units of pressure.
-                          float result // remove pressure units (matrix solver does not support units).
-                       )
+            |> Seq.map (fun m -> m |> divergence |> (( *) c) |> float)
             |> Seq.toList
             |> vector
     let pressures = m.Solve(b)
@@ -135,7 +131,9 @@ module Pressure =
   // verify that pressures look sane.
   let check_pressures markers =
     for m in markers do
-      let p = (Grid.raw_get m).pressure |> Option.get |> ((/) (LanguagePrimitives.FloatWithMeasure 1.0))
+      let p = (Grid.raw_get m).pressure
+              |> Option.get
+              |> ((/) (LanguagePrimitives.FloatWithMeasure 1.0))
       if Double.IsNaN p then
         failwith "Invalid pressure."
       if Double.IsNegativeInfinity p then
