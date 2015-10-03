@@ -21,7 +21,7 @@ type Splashy () =
   do base.VSync <- VSyncMode.On
 
   // configuration.
-  let continuous = false
+  let mutable continuous = false
   let mutable debug_mode = true
 
   // input states.
@@ -84,6 +84,8 @@ type Splashy () =
       | Key.Escape -> base.Close()
       | Key.Number0 ->
         debug_mode <- not debug_mode
+      | Key.Space ->
+        continuous <- not continuous
       | Key.W -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
       | Key.A -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
       | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
