@@ -138,12 +138,7 @@ type Splashy () =
 
     // draw the world and all the cells.
     let get_drawables fn =
-      [ for coord in Grid.filter fn do
-        let x = float32 coord.x
-        let y = float32 coord.y
-        let z = float32 coord.z
-        let c = Grid.raw_get coord
-        yield (c, Vector3(x, y, z)) ]
+      [ for coord in Grid.filter fn do yield (Grid.raw_get coord, coord) ]
 
     // we draw in a specific order for transparency reasons.
     let solids = get_drawables (fun c -> c.media = Solid)

@@ -173,8 +173,9 @@ module Drawables =
                       ("vertex_normal", Aabb.normal_data);
                       ("vertex_color", color_data)]
     let debug_attributes = [("vertex_position", vertex_data)]
-    member private this.render_internal (where: Vector3) (vao: int) (length: int) =
-      let mutable m = Matrix4.CreateTranslation(where)
+    member private this.render_internal (where: Coord) (vao: int) (length: int) =
+      let l = Vector3(float32 where.x, float32 where.y, float32 where.z)
+      let mutable m = Matrix4.CreateTranslation(l)
       GL.UniformMatrix4(vertex_location, false, &m)
       GL.BindVertexArray(vao)
       GL.DrawElements(BeginMode.Triangles, length, DrawElementsType.UnsignedInt, 0)
@@ -185,7 +186,8 @@ module Drawables =
     member this.render where =
       this.render_internal where main_vao Aabb.indices_data.Length
     member this.render_debug c where =
-      let mutable v = Vector3(float32 c.velocity.x, float32 c.velocity.y, float32 c.velocity.z)
+      let total_v = Simulator.get_velocity where
+      let mutable v = Vector3(float32 total_v.x, float32 total_v.y, float32 total_v.z)
       GL.Uniform3(velocity_location, &v)
       this.render_internal where debug_vao Aabb.half_indices_data.Length
     member this.destroy () =

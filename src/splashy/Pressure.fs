@@ -88,10 +88,10 @@ module Pressure =
     match Grid.get where with
       | Some c when c.is_solid () ->
         get_solid_pressure c origin p inv_c d
-      | Some c when c.media = Fluid ->
+      | Some c ->
         Option.get c.pressure
       | _ ->
-        Constants.atmospheric_pressure
+        failwith "no pressure found."
 
   let forwards_gradient (where: Coord) p inv_c =
     let p1 = where.get_neighbor PosX |> get_pressure where p inv_c PosX

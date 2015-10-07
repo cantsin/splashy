@@ -24,18 +24,25 @@ module Simulator =
   let mutable private markers: Coord list = []         // closest coordinate locations.
   let mutable private locations: Vector3d<m> list = [] // real locations.
 
+  let get_velocity (m: Coord) =
+    let c = Grid.raw_get m
+    let v = m.backward_neighbors ()
+            |> Seq.fold (fun accum (d, n) ->
+                           match Grid.get n with
+                            | Some nc ->
+                              let nv = Coord.border d nc.velocity
+                              accum .+ nv
+                            | None ->
+                              accum
+                         ) Vector3d.ZERO
+    v .+ c.velocity
+
   // for now, advance by frame.
   let move_markers dt =
     locations <- Seq.map (fun (l: Vector3d<m>) ->
                             let m = Coord.construct(l.x, l.y, l.z)
-                            let c = Grid.raw_get m
-                            let v = m.backward_neighbors ()
-                                    |> Seq.fold (fun accum (d, n) ->
-                                                   let nc = Grid.raw_get n
-                                                   let nv = Coord.border d nc.velocity
-                                                   accum .+ nv
-                                                 ) Vector3d.ZERO
-                            l .+ ((v .+ c.velocity) .* dt)
+                            let v = get_velocity m
+                            l .+ (v .* dt)
                           ) locations |> Seq.toList
     let moved = Seq.fold (fun accum (m: Coord, l: Vector3d<m>) ->
                             let c = Coord.construct(l.x, l.y, l.z)
@@ -48,11 +55,6 @@ module Simulator =
     moved
 
   let advance dt =
-
-    // iterations <- iterations + 1
-    // if iterations > number_iterations then
-    //   failwith "Done."
-
     let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
     printfn "Moving simulation forward with time step %A." dt

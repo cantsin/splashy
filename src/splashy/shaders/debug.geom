@@ -8,7 +8,7 @@ in VS_OUT {
     layout(location = 7) vec3 velocity;
 } gs_in[3];
 
-const float MAGNITUDE = 5.0f;
+const float MAGNITUDE = 1.0f;
 
 void main()
 {
