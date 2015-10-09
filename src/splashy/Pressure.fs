@@ -145,5 +145,5 @@ module Pressure =
   let check_divergence markers =
     for m in markers do
       let f = divergence m
-      if f > 0.0001<m/s> || f < -0.0001<m/s> then
+      if abs f > 0.0001<m/s> then
         failwith <| sprintf "Velocity field is not correct: %A has divergence %A." m f

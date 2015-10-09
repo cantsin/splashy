@@ -95,7 +95,7 @@ module Simulator =
       // make sure solids are not moving (for now).
       Grid.filter Cell.media_is_solid
       |> Seq.collect (fun (solid: Coord) ->
-                        let result = solid.neighbors ()
+                        let result = solid.backward_neighbors ()
                                      |> Seq.filter (fun (d, c) -> Grid.get c |> Option.isSome)
                                      |> Seq.map (fun (d, c) ->
                                                    let v = (Grid.raw_get c).velocity
