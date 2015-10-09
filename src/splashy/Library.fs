@@ -27,6 +27,7 @@ type Splashy () =
   // input states.
   let mutable keyPressed = false // don't rush through the simulation.
   let mutable mouseReady = false
+  let step = 0.2f // how fine grained movement should be
 
   // graphical sub-systems.
   let camera = new Camera ()
@@ -86,10 +87,10 @@ type Splashy () =
         debug_mode <- not debug_mode
       | Key.Space ->
         continuous <- not continuous
-      | Key.W -> camera.move (Vector3(0.0f, 0.0f, 1.0f))
-      | Key.A -> camera.move (Vector3(1.0f, 0.0f, 0.0f))
-      | Key.S -> camera.move (Vector3(0.0f, 0.0f, -1.0f))
-      | Key.D -> camera.move (Vector3(-1.0f, 0.0f, 0.0f))
+      | Key.W -> camera.move (Vector3(0.0f, 0.0f, step))
+      | Key.A -> camera.move (Vector3(step, 0.0f, 0.0f))
+      | Key.S -> camera.move (Vector3(0.0f, 0.0f, -step))
+      | Key.D -> camera.move (Vector3(-step, 0.0f, 0.0f))
       | Key.Right ->
         if not keyPressed && not continuous then
           try
@@ -183,7 +184,7 @@ type Splashy () =
 module Library =
   let splashy = new Splashy()
   let version = GL.GetString(StringName.Version)
-  let N = 2
+  let N = 1
   printfn "GL version: %A" version
   printfn "Generating %d random markers" N
   Simulator.generate N

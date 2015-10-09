@@ -36,7 +36,8 @@ module Build =
   // reset grid layers.
   let setup fn =
     Layers.clear ()
-    Grid.filter (fun _ -> true) |> Seq.iter (fun m -> Layers.set m None)
+    Grid.filter (fun _ -> true)
+    |> Seq.iter (fun m -> Layers.set m None)
     fn ()
 
   // add new water cells.
@@ -62,11 +63,11 @@ module Build =
 
   // reset grid layers but mark fluids as layer 0.
   let cleanup fn =
-    let coords = Grid.filter (fun _ -> true)
-    Seq.iter (fun m ->
-                let c = Grid.raw_get m
-                Layers.set m (if c.media = Fluid then Some 0 else None)
-              ) coords
+    Grid.filter (fun _ -> true)
+    |> Seq.iter (fun m ->
+                  let c = Grid.raw_get m
+                  Layers.set m (if c.media = Fluid then Some 0 else None)
+                )
     fn ()
 
   let delete_unused () =
