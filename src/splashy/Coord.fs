@@ -66,15 +66,6 @@ module Coord =
       let to_nearest_int x = float x |> round |> int |> Coord.nearest |> fun n -> n * 1<m>
       { x = to_nearest_int x; y = to_nearest_int y; z = to_nearest_int z; }
 
-    member this.neighbors () =
-      let h = int Constants.h * 1<m>
-      [| PosX, { this with x = this.x + h };
-         NegX, { this with x = this.x - h };
-         PosY, { this with y = this.y + h };
-         NegY, { this with y = this.y - h };
-         PosZ, { this with z = this.z + h };
-         NegZ, { this with z = this.z - h }; |]
-
     member this.backward_neighbors () =
       let h = int Constants.h * 1<m>
       [| NegX, { this with x = this.x - h };
@@ -86,6 +77,9 @@ module Coord =
       [| PosX, { this with x = this.x + h };
          PosY, { this with y = this.y + h };
          PosZ, { this with z = this.z + h }; |]
+
+    member this.neighbors () =
+      Array.concat [this.forward_neighbors (); this.backward_neighbors ()]
 
     member this.get_neighbor dir =
       let h = int Constants.h * 1<m>
