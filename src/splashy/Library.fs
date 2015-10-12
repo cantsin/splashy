@@ -14,6 +14,7 @@ open Drawables
 open Grid
 open Simulator
 open Camera
+open Constants
 
 type Splashy () =
   inherit GameWindow(800, 600, GraphicsMode.Default, "Splashy")
@@ -27,7 +28,6 @@ type Splashy () =
   // input states.
   let mutable keyPressed = false // don't rush through the simulation.
   let mutable mouseReady = false
-  let step = 0.2f // how fine grained movement should be
 
   // graphical sub-systems.
   let camera = new Camera ()
@@ -87,10 +87,13 @@ type Splashy () =
         debug_mode <- not debug_mode
       | Key.Space ->
         continuous <- not continuous
-      | Key.W -> camera.move (Vector3(0.0f, 0.0f, step))
-      | Key.A -> camera.move (Vector3(step, 0.0f, 0.0f))
-      | Key.S -> camera.move (Vector3(0.0f, 0.0f, -step))
-      | Key.D -> camera.move (Vector3(-step, 0.0f, 0.0f))
+      | Key.W -> camera.move (Vector3(0.0f, 0.0f, Constants.step))
+      | Key.A -> camera.move (Vector3(Constants.step, 0.0f, 0.0f))
+      | Key.S -> camera.move (Vector3(0.0f, 0.0f, -Constants.step))
+      | Key.D -> camera.move (Vector3(-Constants.step, 0.0f, 0.0f))
+      | Key.R ->
+        Grid.filter (fun _ -> true) |> Grid.delete_cells
+        Simulator.generate Constants.N
       | Key.Right ->
         if not keyPressed && not continuous then
           try
@@ -184,8 +187,7 @@ type Splashy () =
 module Library =
   let splashy = new Splashy()
   let version = GL.GetString(StringName.Version)
-  let N = 1
   printfn "GL version: %A" version
-  printfn "Generating %d random markers" N
-  Simulator.generate N
+  printfn "Generating %d random markers" Constants.N
+  Simulator.generate Constants.N
   do splashy.Run(30.0)

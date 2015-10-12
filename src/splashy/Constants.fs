@@ -30,3 +30,7 @@ module Constants =
 
   // world bounds.
   let world_h = 100.0f + (float32 h) / 2.0f
+
+  let step = 0.2f // how fine grained movement should be
+
+  let N = 1 // number of fluid particles to generate for this system
