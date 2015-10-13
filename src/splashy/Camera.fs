@@ -4,7 +4,7 @@ open OpenTK
 
 module Camera =
 
-  let eye = Vector3(0.0f, 0.0f, -400.0f)
+  let eye = Vector3(0.0f, 0.0f, 400.0f)
   let speed = 32.0f
   let mouseSpeed = 4.0f
 

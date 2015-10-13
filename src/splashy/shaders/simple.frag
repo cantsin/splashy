@@ -3,7 +3,6 @@
 precision highp float;
 
 const vec3 ambient = vec3(0.1, 0.1, 0.1);
-const vec3 normalized_light = normalize(vec3(0.5, 0.5, 0.5));
 
 in VS_OUT {
     layout(location = 3) vec3 normal;

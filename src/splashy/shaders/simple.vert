@@ -6,7 +6,7 @@ uniform mat4 projection_matrix;
 uniform mat4 model_view_matrix;
 uniform mat4 vertex_matrix;
 
-const vec4 light_position = vec4(0.0, 500.0, -1000.0, 1.0);
+const vec4 light_position = vec4(0.0, 500.0, 1000.0, 1.0);
 
 layout(location = 0) in vec4 vertex_position;
 layout(location = 1) in vec4 vertex_normal;
