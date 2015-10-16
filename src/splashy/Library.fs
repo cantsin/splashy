@@ -24,6 +24,7 @@ type Splashy () =
   // configuration.
   let mutable continuous = false
   let mutable debug_mode = true
+  let enforce_constraints = true
 
   // input states.
   let mutable keyPressed = false // don't rush through the simulation.
@@ -97,7 +98,7 @@ type Splashy () =
       | Key.Right ->
         if not keyPressed && not continuous then
           try
-            Simulator.advance 0.016671 // 30fps.
+            Simulator.advance 0.016671 enforce_constraints // 30fps.
             keyPressed <- true
           with
             | exn ->
@@ -134,7 +135,7 @@ type Splashy () =
 
     if continuous then
       try
-        Simulator.advance e.Time
+        Simulator.advance e.Time enforce_constraints
       with
         | exn ->
           printfn "Exception! %A" exn.Message

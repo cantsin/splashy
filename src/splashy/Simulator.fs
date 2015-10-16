@@ -51,10 +51,18 @@ module Simulator =
     markers <- Seq.map (fun (l: Vector3d<m>) -> Coord.construct(l.x, l.y, l.z)) locations |> Seq.toList
     moved
 
-  let advance dt =
+  let advance dt sanity =
     let dt = dt * 1.0<s> // * Constants.time_step
     printfn "-->"
     printfn "Moving simulation forward with time step %A." dt
+
+    printfn "Moving fluid markers."
+    move_markers dt |> Grid.move_cells
+
+    if sanity then
+      printfn "* Verifying containment."
+      Build.check_containment markers
+
     Build.setup (fun () ->
       printfn "  Setup: Adding possible new fluid markers."
       Build.add_new_markers markers |> Grid.add_cells
@@ -65,9 +73,11 @@ module Simulator =
       printfn "  Setup: Removing unused layers."
       Build.delete_unused () |> Grid.delete_cells
     )
-    // sanity check, part 1.
-    printfn "* Verifying marker surroundings."
-    Build.check_surroundings markers
+
+    if sanity then
+      printfn "* Verifying marker surroundings."
+      Build.check_surroundings markers
+
     printfn "Applying convection term -(∇⋅u)u."
     Convection.apply markers dt |> Grid.update_velocities
     printfn "Applying external forces term F."
@@ -77,12 +87,15 @@ module Simulator =
     printfn "Applying pressure term -1/ρ∇p."
     Pressure.calculate markers dt |> Grid.update_pressures
     Pressure.apply markers dt |> Grid.update_velocities
-    // sanity check, part 2.
-    printfn "* Verifying pressures."
-    Pressure.check_pressures markers
-    // sanity check, part 3.
-    printfn "* Verifying divergence (2)."
-    Pressure.check_divergence markers
+
+    if sanity then
+      printfn "* Verifying pressures."
+      Pressure.check_pressures markers
+
+    if sanity then
+      printfn "* Verifying divergence (2)."
+      Pressure.check_divergence markers
+
     printfn "Cleaning up fluid velocities."
     Build.cleanup (fun () ->
       printfn "  Cleanup: Propagating fluid velocities into surroundings."
@@ -95,15 +108,10 @@ module Simulator =
       |> Seq.map (fun (solid: Coord) -> (solid, Vector3d.ZERO))
       |> Grid.update_velocities
     )
-    printfn "Moving fluid markers."
-    move_markers dt |> Grid.move_cells
-    // sanity check, part 4.
-    printfn "* Verifying containment."
-    Build.check_containment markers
 
   // generate a random amount of markers to begin with (testing purposes only).
   let generate n =
-    let seed = 12345
+    let seed = 12349
     let r = System.Random(seed)
     let h = int Constants.h
     let l = int (Constants.world_h / float32 Constants.h)
